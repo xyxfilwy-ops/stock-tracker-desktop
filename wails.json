@@ -1,0 +1,31 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "stock-tracker",
+  "outputfilename": "StockTracker",
+  "frontend": {
+    "dir": "./frontend",
+    "install": "npm install",
+    "build": "npm run build",
+    "dev": "npm run dev",
+    "package": "npm install"
+  },
+  "author": {
+    "name": "StockTracker",
+    "email": "dev@stocktracker.local"
+  },
+  "info": {
+    "companyName": "StockTracker",
+    "productName": "StockTracker",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2026 StockTracker",
+    "comments": "本地股票跟踪桌面工具"
+  },
+  "wailsjsdir": "./frontend/src/lib",
+  "build": {
+    "nsisType": "multiple",
+    "webview2": "embed",
+    "updater": {
+      "type": "none"
+    }
+  }
+}

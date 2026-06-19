@@ -1,0 +1,763 @@
+/**
+ * StockTracker Design System — OpenDesign 规范实现
+ * 基于 PRD 4.1~4.8，A股红涨绿跌，低饱和度，暖色调。
+ */
+
+/* ---------------------------------------------------------------------------
+   1. CSS 变量 — 调色盘 / 字体 / 间距 / 动效
+   --------------------------------------------------------------------------- */
+:root {
+  /* 主色 */
+  --primary: #2563eb;            /* 主按钮、链接、活跃态 */
+  --primary-hover: #1d4ed8;      /* 主色悬浮态 */
+  --primary-soft: rgba(37, 99, 235, 0.15); /* focus 光晕 */
+
+  /* 涨/跌 — A股惯例：红涨绿跌 */
+  --positive: #c53d32;             /* 涨 */
+  --positive-bg: rgba(197, 61, 50, 0.08); /* 涨标签背景 */
+  --negative: #2a8f5e;           /* 跌 */
+  --negative-bg: rgba(42, 143, 94, 0.08); /* 跌标签背景 */
+  --neutral: #6b7280;            /* 平盘/无数据 */
+
+  /* 背景/表面/边框 */
+  --bg: #f8f9fa;                 /* 页面背景 */
+  --surface: #ffffff;            /* 卡片/面板 */
+  --border: #e5e7eb;             /* 边框/分隔线 */
+
+  /* 文字 */
+  --text-primary: #1f2937;       /* 正文主色 */
+  --text-secondary: #4b5563;     /* 辅助文字 */
+  --text-muted: #9ca3af;         /* 占位/禁用 */
+
+  /* 状态 */
+  --warning: #d97706;            /* 警告/提醒 */
+  --error-bg: #fef2f2;           /* 错误提示背景 */
+  --error-text: #b91c1c;         /* 错误文字 */
+  --success-bg: #f0fdf4;         /* 成功提示背景 */
+  --success-text: #15803d;       /* 成功文字 */
+
+  /* 字体栈 */
+  --font-display: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'PingFang SC', 'Microsoft YaHei', Consolas, monospace;
+
+  /* 间距阶梯 */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --space-64: 64px;
+
+  /* 圆角 */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* 动效 */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-hover: 150ms;
+  --dur-transition: 200ms;
+  --dur-dialog: 250ms;
+  --dur-progress: 300ms;
+}
+
+/* ---------------------------------------------------------------------------
+   2. 基础重置
+   --------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 720px;          /* 标准容器宽度 */
+  margin: 0 auto;
+  padding: var(--space-16);
+}
+
+@media (max-width: 480px) {
+  #app {
+    padding: var(--space-12);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   3. 按钮 Button
+   --------------------------------------------------------------------------- */
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 var(--space-16);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: opacity var(--dur-hover) var(--ease),
+              background-color var(--dur-hover) var(--ease);
+  white-space: nowrap;
+}
+
+/* 主按钮 */
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* 次按钮 */
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+/* 危险按钮 */
+.btn-danger {
+  background: var(--positive); /* 危险动作也用红 */
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* 禁用态 */
+.btn-disabled,
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+/* 图标按钮（刷新按钮等） */
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--dur-hover) var(--ease),
+              color var(--dur-hover) var(--ease);
+}
+.btn-icon:hover:not(:disabled) {
+  background: var(--bg);
+  color: var(--text-primary);
+}
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 刷新按钮旋转动画 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spinning .icon-refresh,
+.icon-refresh.spinning {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   4. 输入框 Input
+   --------------------------------------------------------------------------- */
+.input {
+  height: 36px;
+  width: 100%;
+  padding: 0 var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--surface);
+  outline: none;
+  transition: border-color var(--dur-transition) var(--ease),
+              box-shadow var(--dur-transition) var(--ease);
+}
+.input::placeholder {
+  color: var(--text-muted);
+  font-family: var(--font-body);
+}
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-soft);
+}
+.input:disabled {
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------------
+   5. 数据表格 DataTable
+   --------------------------------------------------------------------------- */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table-header {
+  height: 36px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.data-table-header th {
+  padding: var(--space-8) var(--space-12);
+  white-space: nowrap;
+}
+
+.data-table-row {
+  height: 44px;
+  border-bottom: 1px solid var(--border);
+  transition: background-color var(--dur-hover) var(--ease);
+}
+.data-table-row:hover {
+  background: rgba(0, 0, 0, 0.02); /* oklch(95% 0.02 260) 近似 */
+}
+.data-table-row td {
+  padding: var(--space-8) var(--space-12);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* 禁用斑马纹 */
+.data-table-row:nth-child(even) {
+  background: transparent;
+}
+.data-table-row:nth-child(even):hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* 合计行（固定在表头下方） */
+.summary-row {
+  height: 36px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--border);
+}
+.summary-row td {
+  padding: var(--space-8) var(--space-12);
+}
+
+/* ---------------------------------------------------------------------------
+   6. 对话框 Dialog
+   --------------------------------------------------------------------------- */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn var(--dur-dialog) var(--ease);
+}
+
+.dialog {
+  width: 400px;
+  max-width: calc(100vw - var(--space-32));
+  max-height: calc(100vh - var(--space-32));
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-24);
+  box-shadow: var(--shadow-lg);
+  animation: dialogSlideIn var(--dur-dialog) var(--ease);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dialog-body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
+
+/* 对话框进入动画 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   7. Badge / 涨跌标识
+   --------------------------------------------------------------------------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.badge-up {
+  color: var(--positive);
+  background: var(--positive-bg);
+}
+.badge-up::before {
+  content: '+';
+  margin-right: 1px;
+}
+.badge-up::after {
+  content: '%';
+  margin-left: 1px;
+}
+
+.badge-down {
+  color: var(--negative);
+  background: var(--negative-bg);
+}
+.badge-down::after {
+  content: '%';
+  margin-left: 1px;
+}
+
+.badge-neutral {
+  color: var(--neutral);
+  background: rgba(107, 114, 128, 0.08);
+}
+
+/* 数值颜色（表格直接展示用） */
+.positive { color: var(--positive); }
+.negative { color: var(--negative); }
+.neutral  { color: var(--neutral); }
+
+/* 价格数字（等宽） */
+.price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* 涨跌幅数字（等宽） */
+.change {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+   8. 空状态 EmptyState
+   --------------------------------------------------------------------------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-48) var(--space-16);
+  text-align: center;
+  gap: var(--space-12);
+}
+
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.empty-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-state-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.empty-state-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ---------------------------------------------------------------------------
+   9. 刷新状态指示器
+   --------------------------------------------------------------------------- */
+
+/* 顶部进度条（类似 YouTube） */
+.refresh-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--primary);
+  z-index: 2000;
+  transition: width var(--dur-progress) var(--ease);
+  will-change: width;
+}
+
+/* 行级 pulse 圆点 */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50%      { opacity: 1;   transform: scale(1.1); }
+}
+
+/* 刷新中按钮状态 */
+.refresh-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* 数据行淡入（刷新完成时） */
+.data-row-enter {
+  animation: rowFadeIn 300ms var(--ease);
+}
+@keyframes rowFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ---------------------------------------------------------------------------
+   10. 错误展示 — 分层
+   --------------------------------------------------------------------------- */
+
+/* Toast 提示（顶栏下方） */
+.toast {
+  position: fixed;
+  top: 48px;                  /* 顶栏下方 */
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 1500;
+  animation: toastSlideIn 300ms var(--ease), toastFadeOut 200ms var(--ease) 4.8s forwards;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 90vw;
+}
+
+.toast-success {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid #bbf7d0;
+}
+.toast-error {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid #fecaca;
+}
+.toast-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes toastFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Banner 提示（内容区顶部，不可关闭） */
+.banner {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  background: var(--error-bg);
+  color: var(--text-primary);
+  border: 1px solid #fecaca;
+  margin-bottom: var(--space-16);
+}
+
+/* 离线卡片（内容区居中） */
+.offline-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-32);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  gap: var(--space-16);
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.offline-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.offline-card-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* 行级警告图标（单只股票失败） */
+.cell-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--warning);
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------------------
+   11. Tab 导航
+   --------------------------------------------------------------------------- */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color var(--dur-hover) var(--ease),
+              border-color var(--dur-hover) var(--ease);
+  margin-bottom: -1px;
+}
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+   12. 顶栏 Header
+   --------------------------------------------------------------------------- */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  margin-bottom: var(--space-16);
+  padding: 0 var(--space-4);
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* ---------------------------------------------------------------------------
+   13. 内容区卡片
+   --------------------------------------------------------------------------- */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-16);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-12);
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   14. 辅助工具类
+   --------------------------------------------------------------------------- */
+.flex {
+  display: flex;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.items-center {
+  align-items: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.gap-4  { gap: var(--space-4); }
+.gap-8  { gap: var(--space-8); }
+.gap-12 { gap: var(--space-12); }
+
+.text-right  { text-align: right; }
+.text-left   { text-align: left; }
+.text-center { text-align: center; }
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* 横向滚动（移动端） */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+.scroll-x::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* 全局禁止：hover 文字放大 */
+* {
+  transition: none;
+}
+* {
+  transition: background-color var(--dur-hover) var(--ease),
+              border-color var(--dur-hover) var(--ease),
+              opacity var(--dur-hover) var(--ease),
+              color var(--dur-hover) var(--ease),
+              box-shadow var(--dur-hover) var(--ease);
+}
+/* 排除 transform 类，避免误伤 */
+.icon-refresh,
+.spinning .icon-refresh,
+.pulse-dot,
+.dialog,
+.toast,
+.data-row-enter {
+  transition: none; /* 这些有自己的动画 */
+}
+
+/* 禁用 transform 放大 */
+*:hover {
+  transform: none !important;
+}
+/* 恢复 dialog 和 toast 的 transform（它们用 animation 不是 transition） */
+.dialog {
+  transform: translateY(0) scale(1);
+}
