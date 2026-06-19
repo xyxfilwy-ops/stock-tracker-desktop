@@ -28,6 +28,14 @@ export interface Stock {
   lastUpdate: string;     // 最后更新时间
 }
 
+/** 搜索返回的候选结果 */
+export interface SearchResult {
+  code: string;    // 如 "sh600519"
+  name: string;    // 如 "贵州茅台"
+  pinyin: string;  // 如 "GZMT"
+  type: string;    // "stock" | "fund"
+}
+
 /** 已调出历史记录 */
 export interface HistoryRecord {
   id: number;
@@ -79,6 +87,8 @@ declare global {
           RefreshAll(): Promise<RefreshResult>;
           RefreshStock(id: number): Promise<Stock>;
           GetMarketStatus(): Promise<MarketStatus>;
+          ClearHistory(): Promise<void>;
+          SearchStocks(keyword: string): Promise<SearchResult[]>;
         };
       };
     };
@@ -146,6 +156,10 @@ export function GetMarketStatus(): Promise<MarketStatus> {
 
 export function ClearHistory(): Promise<void> {
   return wrap(window.go.main.App.ClearHistory(), '清空历史记录');
+}
+
+export function SearchStocks(keyword: string): Promise<SearchResult[]> {
+  return wrap(window.go.main.App.SearchStocks(keyword), '搜索股票/基金');
 }
 
 // ---------------------------------------------------------------------------
@@ -228,6 +242,8 @@ export default {
   GetMarketStatus,
   onRefreshProgress,
   offRefreshProgress,
+  ClearHistory,
+  SearchStocks,
   fmtPrice,
   fmtChange,
   changeClass,

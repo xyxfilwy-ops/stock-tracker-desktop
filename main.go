@@ -21,9 +21,9 @@ func main() {
 
 	err := wails.Run(&options.App{
 		Title:     "StockTracker",
-		Width:     900,
+		Width:     1200,
 		Height:    700,
-		MinWidth:  480,
+		MinWidth:  900,
 		MinHeight: 500,
 		AssetServer: &assetserver.Options{
 			Assets: assets,

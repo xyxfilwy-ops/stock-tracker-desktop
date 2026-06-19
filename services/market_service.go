@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"sync"
 	"time"
@@ -369,4 +371,144 @@ func (ms *MarketService) healthCheckLoop() {
 			_ = name
 		}
 	}
+}
+
+// SearchStocks 搜索股票/基金（支持名称、代码、首字母）
+func (ms *MarketService) SearchStocks(ctx context.Context, keyword string) ([]SearchResult, error) {
+	if keyword == "" {
+		return []SearchResult{}, nil
+	}
+
+	url := fmt.Sprintf(
+		"https://searchapi.eastmoney.com/api/suggest/get?input=%s&type=14&count=8",
+		url.QueryEscape(keyword),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("build search request: %w", err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.0")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := ms.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("search request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("search API returned status %d", resp.StatusCode)
+	}
+
+	var result searchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode search response: %w", err)
+	}
+
+	var results []SearchResult
+	for _, item := range result.QuotationCodeTable.Data {
+		// 只保留 A 股、场内基金和场外基金
+		if item.Classify != "AStock" && item.Classify != "Fund" && item.Classify != "OTCFUND" {
+			continue
+		}
+
+		var resultCode string
+		var itemType string
+
+		if item.Classify == "OTCFUND" {
+			// 场外基金：直接使用原始代码，不带前缀
+			resultCode = item.Code
+			itemType = "otc_fund"
+		} else if item.Classify == "Fund" {
+			// 场内基金：根据 MktNum 判断前缀（"1"=上海, "0"=深圳）
+			prefix := "sz"
+			if item.MktNum == "1" {
+				prefix = "sh"
+			}
+			resultCode = prefix + item.Code
+			itemType = "fund"
+		} else {
+			// A 股
+			prefix := "sz"
+			if item.MktNum == "1" {
+				prefix = "sh"
+			}
+			resultCode = prefix + item.Code
+			itemType = "stock"
+		}
+
+		results = append(results, SearchResult{
+			Code:   resultCode,
+			Name:   item.Name,
+			Pinyin: item.PinYin,
+			Type:   itemType,
+		})
+	}
+
+	return results, nil
+}
+
+// FetchOTCFundQuote 获取场外基金最新净值（通过东方财富）
+func (ms *MarketService) FetchOTCFundQuote(ctx context.Context, code string) (*providers.Quote, error) {
+	ms.mu.RLock()
+	p, ok := ms.providers[providers.SourceEastMoney]
+	ms.mu.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("eastmoney provider not available")
+	}
+
+	emProvider, ok := p.(*providers.EastMoneyProvider)
+	if !ok {
+		return nil, fmt.Errorf("eastmoney provider type mismatch")
+	}
+
+	cb, ok := ms.circuits[providers.SourceEastMoney]
+	if !ok {
+		return nil, fmt.Errorf("no circuit breaker for eastmoney")
+	}
+
+	result, err := cb.Execute(func() (interface{}, error) {
+		return emProvider.FetchOTCFundQuote(ctx, code)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, fmt.Errorf("nil quote from eastmoney")
+	}
+
+	quote, ok := result.(*providers.Quote)
+	if !ok {
+		return nil, fmt.Errorf("invalid quote type from eastmoney")
+	}
+	return quote, nil
+}
+
+// SearchResult 表示搜索返回的一条结果
+type SearchResult struct {
+	Code   string `json:"code"`
+	Name   string `json:"name"`
+	Pinyin string `json:"pinyin"`
+	Type   string `json:"type"` // stock / fund
+}
+
+// searchResponse 是东方财富搜索接口的响应结构
+type searchResponse struct {
+	QuotationCodeTable struct {
+		Data []struct {
+			Code         string `json:"Code"`
+			Name         string `json:"Name"`
+			PinYin       string `json:"PinYin"`
+			JYS          string `json:"JYS"`
+			Classify     string `json:"Classify"`
+			MarketType   string `json:"MarketType"`
+			SecurityType string `json:"SecurityType"`
+			MktNum       string `json:"MktNum"`
+			QuoteID      string `json:"QuoteID"`
+		} `json:"Data"`
+		Status     int    `json:"Status"`
+		Message    string `json:"Message"`
+		TotalCount int    `json:"TotalCount"`
+	} `json:"QuotationCodeTable"`
 }

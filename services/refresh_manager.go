@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"stock-tracker/config"
 	"stock-tracker/database"
+	"stock-tracker/providers"
 	"sync"
 	"time"
 
@@ -153,8 +154,9 @@ func (rm *RefreshManager) RefreshAll(ctx context.Context) (*RefreshResult, error
 	return result, nil
 }
 
-// RefreshOne 刷新单只股票
+// RefreshOne 刷新单只股票/基金
 // 经容灾链获取行情，数据归一化后更新 stocks 表
+// 场外基金（纯6位数字）使用天天基金净值接口
 func (rm *RefreshManager) RefreshOne(ctx context.Context, id int64) (*database.Stock, error) {
 	stock, err := rm.stockRepo.GetByID(id)
 	if err != nil {
@@ -164,10 +166,22 @@ func (rm *RefreshManager) RefreshOne(ctx context.Context, id int64) (*database.S
 		return nil, fmt.Errorf("股票不存在: %d", id)
 	}
 
-	// 经容灾链获取行情，优先使用 stocks 表记录的数据源
-	quote, err := rm.marketService.FetchQuoteWithPreferred(ctx, stock.Code, stock.DataSource)
-	if err != nil {
-		return nil, fmt.Errorf("获取行情失败: %w", err)
+	var quote *providers.Quote
+
+	if isOTCFundCode(stock.Code) {
+		// 场外基金：使用天天基金净值接口
+		q, err := rm.marketService.FetchOTCFundQuote(ctx, stock.Code)
+		if err != nil {
+			return nil, fmt.Errorf("获取场外基金净值失败: %w", err)
+		}
+		quote = q
+	} else {
+		// 场内股票/基金：经容灾链获取行情
+		q, err := rm.marketService.FetchQuoteWithPreferred(ctx, stock.Code, stock.DataSource)
+		if err != nil {
+			return nil, fmt.Errorf("获取行情失败: %w", err)
+		}
+		quote = q
 	}
 
 	now := time.Now()
@@ -177,7 +191,7 @@ func (rm *RefreshManager) RefreshOne(ctx context.Context, id int64) (*database.S
 	currentPrice := database.ToPriceCents(quote.Price)
 	prevClose := database.ToPriceCents(quote.PrevClose)
 
-	// 计算日涨跌幅：优先取 API 直供的 ChangePct，否则自行计算
+	// 计算日涨跌幅
 	var dailyChange int64
 	if !quote.IsSuspended {
 		if quote.ChangePct != 0 {
@@ -201,7 +215,7 @@ func (rm *RefreshManager) RefreshOne(ctx context.Context, id int64) (*database.S
 		status = database.StockStatusSuspended
 	}
 
-	// 更新数据库（含数据源信息，实现同一源锁定）
+	// 更新数据库
 	err = rm.stockRepo.UpdateAfterRefresh(
 		stock.ID,
 		currentPrice,

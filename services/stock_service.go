@@ -43,21 +43,30 @@ func (ss *StockService) GetHistory() ([]database.HistoryRecord, error) {
 	return ss.historyRepo.GetAll()
 }
 
-// Add 选入股票
-// 1. 标准化代码（自动补全 sh/sz 前缀）
-// 2. 检查是否已存在（code UNIQUE）
-// 3. 经容灾链获取实时行情（名称、当前价、昨收价）
-// 4. 调用东方财富K线接口获取前复权和不复权数据
-// 5. 计算复权因子 = 不复权收盘价 / 前复权收盘价
-// 6. 写入 stocks 表（entry_price=前复权价格，raw_price=不复权，adjust_factor=复权因子×1000）
+// Add 选入股票/基金
+// 1. 判断是否为场外基金（纯6位数字，不带前缀）
+// 2. 标准化代码
+// 3. 检查是否已存在
+// 4. 获取实时行情（场外基金用净值接口，场内用行情接口）
+// 5. 计算复权因子（场外基金不需要）
+// 6. 写入 stocks 表
 // 7. 返回新建的记录
 func (ss *StockService) Add(code string) (*database.Stock, error) {
 	if ss.marketService == nil {
 		return nil, fmt.Errorf("market service not initialized")
 	}
 
+	// 判断是否为场外基金
+	isOTCFund := isOTCFundCode(code)
+
 	// 1. 标准化代码
-	normalizedCode := normalizeCode(code)
+	var normalizedCode string
+	if isOTCFund {
+		// 场外基金：直接使用原始代码，不带前缀
+		normalizedCode = strings.TrimSpace(code)
+	} else {
+		normalizedCode = normalizeCode(code)
+	}
 	if normalizedCode == "" {
 		return nil, fmt.Errorf("无效的股票代码: %s", code)
 	}
@@ -72,70 +81,94 @@ func (ss *StockService) Add(code string) (*database.Stock, error) {
 	}
 
 	ctx := context.Background()
-
-	// 3. 经容灾链获取实时行情
-	quote, err := ss.marketService.FetchQuoteWithPreferred(ctx, normalizedCode, "")
-	if err != nil {
-		return nil, fmt.Errorf("获取行情失败: %w", err)
-	}
-
-	// 4. 获取前复权和不复权 K 线数据
 	now := time.Now()
 	entryDate := now.Format("2006-01-02")
-
-	var entryPrice int64   // 前复权收盘价（分）
-	var rawPrice int64     // 不复权收盘价（分）
+	var entryPrice int64
+	var rawPrice int64
 	var adjustFactor int64 = 1000
+	var quote *providers.Quote
 
-	adjKlines, err := ss.marketService.FetchKlineData(ctx, normalizedCode)
-	if err == nil {
-		for _, k := range adjKlines {
-			if k.Date == entryDate {
-				entryPrice = k.Close
+	if isOTCFund {
+		// 场外基金：获取最新净值
+		q, err := ss.marketService.FetchOTCFundQuote(ctx, normalizedCode)
+		if err != nil {
+			return nil, fmt.Errorf("获取场外基金净值失败: %w", err)
+		}
+		quote = q
+		entryPrice = database.ToPriceCents(q.Price)
+		rawPrice = entryPrice
+		adjustFactor = 1000
+	} else {
+		// 场内股票/基金：经容灾链获取实时行情
+		q, err := ss.marketService.FetchQuoteWithPreferred(ctx, normalizedCode, "")
+		if err != nil {
+			return nil, fmt.Errorf("获取行情失败: %w", err)
+		}
+		quote = q
+
+		// 获取前复权和不复权 K 线数据
+		adjKlines, err := ss.marketService.FetchKlineData(ctx, normalizedCode)
+		if err == nil {
+			for _, k := range adjKlines {
+				if k.Date == entryDate {
+					entryPrice = k.Close
+					break
+				}
+			}
+		}
+
+		rawKlines, err := ss.marketService.FetchRawKlineData(ctx, normalizedCode)
+		if err == nil {
+			for _, k := range rawKlines {
+				if k.Date == entryDate {
+					rawPrice = k.Close
+					break
+				}
+			}
+		}
+
+		// 计算复权因子
+		if entryPrice > 0 && rawPrice > 0 {
+			adjustFactor = rawPrice * 1000 / entryPrice
+		}
+
+		// 如果 K 线数据不可用，使用当前价作为降级
+		currentPrice := database.ToPriceCents(quote.Price)
+		if entryPrice == 0 {
+			entryPrice = currentPrice
+		}
+		if rawPrice == 0 {
+			rawPrice = currentPrice
+		}
+	}
+
+	// 场外基金名称补全：净值接口不返回名称，从搜索接口获取
+	if isOTCFund && quote.Name == normalizedCode {
+		searchResults, _ := ss.marketService.SearchStocks(ctx, normalizedCode)
+		for _, r := range searchResults {
+			if r.Code == normalizedCode && r.Type == "otc_fund" && r.Name != "" {
+				quote.Name = r.Name
 				break
 			}
 		}
 	}
 
-	rawKlines, err := ss.marketService.FetchRawKlineData(ctx, normalizedCode)
-	if err == nil {
-		for _, k := range rawKlines {
-			if k.Date == entryDate {
-				rawPrice = k.Close
-				break
-			}
-		}
-	}
-
-	// 5. 计算复权因子 = 不复权收盘价 / 前复权收盘价
-	if entryPrice > 0 && rawPrice > 0 {
-		adjustFactor = rawPrice * 1000 / entryPrice
-	}
-
-	// 如果 K 线数据不可用，使用当前价作为降级（factor 保持 1000）
+	// 计算日涨跌幅和累计涨跌幅
 	currentPrice := database.ToPriceCents(quote.Price)
-	if entryPrice == 0 {
-		entryPrice = currentPrice
-	}
-	if rawPrice == 0 {
-		rawPrice = currentPrice
-	}
-
-	// 6. 计算日涨跌幅和累计涨跌幅
 	prevClose := database.ToPriceCents(quote.PrevClose)
 	dailyChange := database.CalculateDailyChange(currentPrice, prevClose)
 	accChange := database.CalculateAccChange(currentPrice, entryPrice, adjustFactor)
 
-	// 停牌判断
+	// 停牌判断（场外基金不判断）
 	status := database.StockStatusNormal
-	if quote.IsSuspended {
+	if !isOTCFund && quote.IsSuspended {
 		status = database.StockStatusSuspended
 	}
 
 	timeStr := now.Format("15:04:05")
 	datetimeStr := now.Format("2006-01-02 15:04:05")
 
-	// 7. 写入数据库
+	// 写入数据库
 	stock := &database.Stock{
 		Code:         normalizedCode,
 		Name:         quote.Name,
@@ -161,6 +194,20 @@ func (ss *StockService) Add(code string) (*database.Stock, error) {
 	}
 
 	return created, nil
+}
+
+// isOTCFundCode 判断代码是否为场外基金格式（纯6位数字，不带 sh/sz 前缀）
+func isOTCFundCode(code string) bool {
+	code = strings.TrimSpace(code)
+	if len(code) != 6 {
+		return false
+	}
+	for _, c := range code {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // Remove 调出股票

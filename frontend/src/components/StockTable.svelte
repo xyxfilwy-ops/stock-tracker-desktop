@@ -139,7 +139,7 @@
     font-weight: 600;
     color: var(--ink-400, #9ca3af);
     text-align: left;
-    padding: 12px 16px;
+    padding: 10px 10px;
     white-space: nowrap;
     border-bottom: 1px solid var(--border-subtle, #f0f0f2);
     text-transform: uppercase;
@@ -151,7 +151,7 @@
   }
 
   .data-row td {
-    padding: 14px 16px;
+    padding: 10px 10px;
     vertical-align: middle;
     white-space: nowrap;
     border-bottom: 1px solid var(--border-subtle, #f0f0f2);
@@ -170,7 +170,7 @@
   }
 
   .cell {
-    padding: 14px 16px;
+    padding: 10px 10px;
   }
 
   .code {

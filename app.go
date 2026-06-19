@@ -70,6 +70,14 @@ func (a *App) ClearHistory() error {
 	}
 	return a.stockService.ClearHistory()
 }
+
+// SearchStocks 搜索股票/基金（支持名称、代码、首字母）
+func (a *App) SearchStocks(keyword string) ([]services.SearchResult, error) {
+	if a.marketService == nil {
+		return nil, fmt.Errorf("market service not initialized")
+	}
+	return a.marketService.SearchStocks(a.ctx, keyword)
+}
 func (a *App) GetConfig() *config.Config {
 	return a.config
 }

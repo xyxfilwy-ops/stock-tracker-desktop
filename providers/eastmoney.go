@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -189,6 +191,106 @@ func (p *EastMoneyProvider) fetchSingle(ctx context.Context, code string) (*Quot
 		return nil, err
 	}
 	return q, nil
+}
+
+// FetchOTCFundQuote 获取场外基金最新净值（单位净值，元）
+// 接口: https://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code={code}&page=1&per=1
+func (p *EastMoneyProvider) FetchOTCFundQuote(ctx context.Context, code string) (*Quote, error) {
+	url := fmt.Sprintf(
+		"https://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=%s&page=1&per=1",
+		code,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Referer", "https://fund.eastmoney.com")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.0")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrSourceUnavailable, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: HTTP %d", ErrSourceUnavailable, resp.StatusCode)
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read body: %v", err)
+	}
+	body := string(bodyBytes)
+
+	// 解析 HTML 表格内容
+	// content 中是一个 HTML table，包含 thead 和 tbody
+	// tbody 中的 td 依次是: 净值日期, 单位净值, 累计净值, 日增长率, 申购状态, 赎回状态, 分红送配
+	contentStart := strings.Index(body, "content:\"")
+	contentEnd := strings.Index(body, "\",records")
+	if contentStart < 0 || contentEnd < 0 || contentEnd <= contentStart {
+		return nil, fmt.Errorf("%w: cannot parse fund data", ErrInvalidResponse)
+	}
+	content := body[contentStart+9 : contentEnd]
+
+	// 提取所有 <td> 内容
+	var tdValues []string
+	re := regexp.MustCompile(`<td[^>]*>([^<]*)</td>`)
+	matches := re.FindAllStringSubmatch(content, -1)
+	for _, m := range matches {
+		if len(m) >= 2 {
+			val := strings.TrimSpace(m[1])
+			val = strings.ReplaceAll(val, "&nbsp;", "")
+			val = strings.TrimSpace(val)
+			if val != "" {
+				tdValues = append(tdValues, val)
+			}
+		}
+	}
+
+	if len(tdValues) < 4 {
+		return nil, fmt.Errorf("%w: cannot parse NAV from HTML (found %d td values)", ErrInvalidResponse, len(tdValues))
+	}
+
+	// tbody 中的 td 顺序：日期, 单位净值, 累计净值, 日增长率, 申购状态, 赎回状态, 分红送配
+	navDate := tdValues[0]
+	navStr := tdValues[1]
+	changePctStr := tdValues[3]
+
+	if navDate == "" || navStr == "" {
+		return nil, fmt.Errorf("%w: cannot parse NAV from HTML", ErrInvalidResponse)
+	}
+
+	nav, err := strconv.ParseFloat(navStr, 64)
+	if err != nil {
+		return nil, fmt.Errorf("%w: invalid NAV %s", ErrInvalidResponse, navStr)
+	}
+
+	// 解析日增长率（如 "2.84%" → 2.84）
+	changePct := 0.0
+	if changePctStr != "" {
+		changePctStr = strings.TrimSuffix(changePctStr, "%")
+		changePctStr = strings.TrimSpace(changePctStr)
+		changePct, _ = strconv.ParseFloat(changePctStr, 64)
+	}
+
+	// 场外基金：昨收净值 = 当前净值 / (1 + 日增长率/100)
+	prevNav := nav
+	if changePct != 0 {
+		prevNav = nav / (1 + changePct/100)
+	}
+
+	name := code
+
+	return &Quote{
+		Code:      code,
+		Name:      name,
+		Price:     nav,
+		PrevClose: prevNav,
+		ChangePct: changePct,
+		Source:    SourceEastMoney,
+	}, nil
 }
 
 // parseEastMoneyPrice 解析东方财富的价格字段，处理精度问题。
