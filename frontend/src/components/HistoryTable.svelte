@@ -13,15 +13,15 @@
   }
 
   function getReturnColor(bp: number): string {
-    if (bp > 0) return 'var(--positive, #dc2626)';
-    if (bp < 0) return 'var(--negative, #16a34a)';
-    return 'var(--text-secondary, #6b7280)';
+    if (bp > 0) return 'var(--positive, #b9403a)';
+    if (bp < 0) return 'var(--negative, #2e8b57)';
+    return 'var(--neutral, #6b7280)';
   }
 
   function formatDateRange(entry: string, exit: string): string {
     const entryFmt = formatShortDate(entry);
     const exitFmt = formatShortDate(exit);
-    return `${entryFmt}→${exitFmt}`;
+    return `${entryFmt} → ${exitFmt}`;
   }
 
   function formatShortDate(dateStr: string): string {
@@ -34,11 +34,11 @@
   <table class="history-table">
     <thead>
       <tr class="header-row">
-        <th class="cell" style="width: 80px;">代码</th>
-        <th class="cell" style="width: 100px;">名称</th>
-        <th class="cell" style="width: 100px; text-align: center;">选入→调出</th>
-        <th class="cell" style="width: 60px; text-align: right;">天数</th>
-        <th class="cell" style="width: 80px; text-align: right;">收益</th>
+        <th class="cell">代码</th>
+        <th class="cell">名称</th>
+        <th class="cell" style="text-align: center;">选入 → 调出</th>
+        <th class="cell" style="text-align: right;">天数</th>
+        <th class="cell" style="text-align: right;">收益</th>
       </tr>
     </thead>
     <tbody>
@@ -47,13 +47,13 @@
           <td class="cell code">{record.code}</td>
           <td class="cell name">{record.name}</td>
           <td class="cell" style="text-align: center;">
-            {formatDateRange(record.entryDate, record.exitDate)}
+            <span class="date-range">{formatDateRange(record.entryDate, record.exitDate)}</span>
           </td>
           <td class="cell" style="text-align: right;">
-            {record.holdingDays}天
+            <span class="days">{record.holdingDays}天</span>
           </td>
           <td class="cell" style="text-align: right;">
-            <span class="badge" style="color: {getReturnColor(record.totalReturn)};">
+            <span class="badge" style="color: {getReturnColor(record.totalReturn)}; background: {record.totalReturn > 0 ? 'var(--positive-bg)' : record.totalReturn < 0 ? 'var(--negative-bg)' : 'rgba(107,114,128,0.06)'};">
               {formatReturn(record.totalReturn)}
             </span>
           </td>
@@ -67,60 +67,86 @@
   .table-wrapper {
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .table-wrapper::-webkit-scrollbar {
+    display: none;
   }
 
   .history-table {
     width: 100%;
-    border-collapse: collapse;
-    font-family: var(--font-mono, 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', Consolas, monospace);
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 14px;
   }
 
-  .header-row {
-    height: 36px;
-    background: transparent;
-    border-bottom: 1px solid var(--border, #e2e4e8);
-  }
-
   .header-row th {
-    font-family: var(--font-body, 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif);
-    font-size: 12px;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 11px;
     font-weight: 600;
-    color: var(--text-secondary, #6b7280);
+    color: var(--ink-400, #9ca3af);
     text-align: left;
-    padding: 8px 12px;
+    padding: 12px 16px;
     white-space: nowrap;
+    border-bottom: 1px solid var(--border-subtle, #f0f0f2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   .data-row {
-    height: 44px;
-    border-bottom: 1px solid var(--border, #e2e4e8);
-    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .data-row td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-subtle, #f0f0f2);
   }
 
   .data-row:hover {
-    background-color: var(--hover-bg, #f3f4f6);
+    background: var(--surface-hover, #fafbfc);
   }
 
   .cell {
-    padding: 8px 12px;
-    white-space: nowrap;
-    vertical-align: middle;
+    padding: 14px 16px;
   }
 
   .code {
-    font-family: var(--font-mono, 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', Consolas, monospace);
+    font-family: var(--font-mono, 'SF Mono', monospace);
     font-size: 13px;
+    color: var(--ink-500, #6b7280);
+    letter-spacing: 0.01em;
   }
 
   .name {
-    font-family: var(--font-body, 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif);
     font-weight: 500;
+    color: var(--ink-900, #0f172a);
+  }
+
+  .date-range {
+    font-family: var(--font-mono, 'SF Mono', monospace);
+    font-size: 13px;
+    color: var(--ink-500, #6b7280);
+    letter-spacing: 0.01em;
+  }
+
+  .days {
+    font-size: 13px;
+    color: var(--ink-500, #6b7280);
   }
 
   .badge {
-    font-family: var(--font-mono, 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', Consolas, monospace);
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: var(--font-mono, 'SF Mono', monospace);
     font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 </style>

@@ -15,9 +15,9 @@
   }
 
   function getChangeColor(bp: number): string {
-    if (bp > 0) return 'var(--positive, #dc2626)';
-    if (bp < 0) return 'var(--negative, #16a34a)';
-    return 'var(--text-secondary, #6b7280)';
+    if (bp > 0) return 'var(--positive, #b9403a)';
+    if (bp < 0) return 'var(--negative, #2e8b57)';
+    return 'var(--neutral, #6b7280)';
   }
 
   function isErrorRow(stock: Stock): boolean {
@@ -34,12 +34,12 @@
   <table class="stock-table">
     <thead>
       <tr class="header-row">
-        <th class="cell" style="width: 80px;">代码</th>
-        <th class="cell" style="width: 100px;">名称</th>
-        <th class="cell" style="width: 80px; text-align: right;">选入价</th>
-        <th class="cell" style="width: 80px; text-align: right;">现价</th>
-        <th class="cell" style="width: 80px; text-align: right;">日涨跌</th>
-        <th class="cell" style="width: 80px; text-align: right;">累计涨跌</th>
+        <th class="cell">代码</th>
+        <th class="cell">名称</th>
+        <th class="cell" style="text-align: right;">选入价</th>
+        <th class="cell" style="text-align: right;">现价</th>
+        <th class="cell" style="text-align: right;">日涨跌</th>
+        <th class="cell" style="text-align: right;">累计涨跌</th>
         <th class="cell" style="width: 40px;"></th>
       </tr>
     </thead>
@@ -49,24 +49,26 @@
           class="data-row"
           class:suspended={stock.status === 'suspended'}
           class:error={isErrorRow(stock)}
-          on:click={() => handleRowClick(stock)}
           class:clickable={stock.status !== 'suspended'}
+          on:click={() => handleRowClick(stock)}
         >
           <td class="cell code">{stock.code}</td>
           <td class="cell name">{stock.name}</td>
-          <td class="cell" style="text-align: right;">{formatPrice(stock.entryPrice)}</td>
+          <td class="cell" style="text-align: right;">
+            <span class="price">{formatPrice(stock.entryPrice)}</span>
+          </td>
           <td class="cell" style="text-align: right;">
             {#if stock.status === 'suspended'}
               <span class="muted">—</span>
             {:else}
-              {formatPrice(stock.currentPrice)}
+              <span class="price">{formatPrice(stock.currentPrice)}</span>
             {/if}
           </td>
           <td class="cell" style="text-align: right;">
             {#if stock.status === 'suspended'}
               <span class="muted">—</span>
             {:else}
-              <span class="badge" style="color: {getChangeColor(stock.dailyChange)};">
+              <span class="badge badge-up" style="color: {getChangeColor(stock.dailyChange)}; background: {stock.dailyChange > 0 ? 'var(--positive-bg)' : stock.dailyChange < 0 ? 'var(--negative-bg)' : 'rgba(107,114,128,0.06)'};">
                 {formatChange(stock.dailyChange)}
               </span>
             {/if}
@@ -75,16 +77,16 @@
             {#if stock.status === 'suspended'}
               <span class="muted">—</span>
             {:else}
-              <span class="badge" style="color: {getChangeColor(stock.accChange)};">
+              <span class="badge badge-up" style="color: {getChangeColor(stock.accChange)}; background: {stock.accChange > 0 ? 'var(--positive-bg)' : stock.accChange < 0 ? 'var(--negative-bg)' : 'rgba(107,114,128,0.06)'};">
                 {formatChange(stock.accChange)}
               </span>
             {/if}
           </td>
           <td class="cell indicator">
             {#if stock.status === 'suspended'}
-              <span class="suspended-badge" title="停牌">⏸</span>
+              <span class="suspended-badge">停牌</span>
             {:else if isErrorRow(stock)}
-              <span class="error-icon" title="获取失败">⚠️</span>
+              <span class="error-icon" title="获取失败">!</span>
             {:else if loading}
               <span class="pulse-dot"></span>
             {/if}
@@ -99,39 +101,46 @@
   .table-wrapper {
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .table-wrapper::-webkit-scrollbar {
+    display: none;
   }
 
   .stock-table {
     width: 100%;
-    border-collapse: collapse;
-    font-family: var(--font-mono, 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', Consolas, monospace);
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 14px;
   }
 
-  .header-row {
-    height: 36px;
-    background: transparent;
-    border-bottom: 1px solid var(--border, #e2e4e8);
-  }
-
   .header-row th {
-    font-family: var(--font-body, 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif);
-    font-size: 12px;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 11px;
     font-weight: 600;
-    color: var(--text-secondary, #6b7280);
+    color: var(--ink-400, #9ca3af);
     text-align: left;
-    padding: 8px 12px;
+    padding: 12px 16px;
     white-space: nowrap;
+    border-bottom: 1px solid var(--border-subtle, #f0f0f2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   .data-row {
-    height: 44px;
-    border-bottom: 1px solid var(--border, #e2e4e8);
-    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .data-row td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-subtle, #f0f0f2);
   }
 
   .data-row:hover {
-    background-color: var(--hover-bg, #f3f4f6);
+    background: var(--surface-hover, #fafbfc);
   }
 
   .data-row.clickable {
@@ -139,66 +148,95 @@
   }
 
   .data-row.suspended {
-    color: var(--text-muted, #9ca3af);
+    color: var(--ink-400, #9ca3af);
   }
 
-  .data-row.error .code,
-  .data-row.error .name {
-    color: var(--text-muted, #9ca3af);
+  .data-row.suspended td {
+    border-bottom: 1px dashed var(--border-subtle, #f0f0f2);
   }
 
   .cell {
-    padding: 8px 12px;
-    white-space: nowrap;
-    vertical-align: middle;
+    padding: 14px 16px;
   }
 
   .code {
-    font-family: var(--font-mono, 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', Consolas, monospace);
+    font-family: var(--font-mono, 'SF Mono', monospace);
     font-size: 13px;
+    color: var(--ink-500, #6b7280);
+    letter-spacing: 0.01em;
   }
 
   .name {
-    font-family: var(--font-body, 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif);
     font-weight: 500;
+    color: var(--ink-900, #0f172a);
   }
 
   .badge {
-    font-family: var(--font-mono, 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', Consolas, monospace);
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: var(--font-mono, 'SF Mono', monospace);
     font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .muted {
-    color: var(--text-muted, #9ca3af);
+    color: var(--ink-400, #9ca3af);
+  }
+
+  .price {
+    font-family: var(--font-mono, 'SF Mono', monospace);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--ink-700, #374151);
   }
 
   .pulse-dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: var(--primary, #2563eb);
+    background: var(--primary, #1e293b);
     animation: pulse 1.5s ease-in-out infinite;
   }
 
   @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.8); }
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50%      { opacity: 1;   transform: scale(1.2); }
   }
 
   .error-icon {
-    color: var(--warning, #d97706);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--warning, #c8781a);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
     cursor: help;
   }
 
   .suspended-badge {
-    color: var(--text-muted, #9ca3af);
-    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-400, #9ca3af);
+    background: var(--ink-50, #f9fafb);
+    border: 1px solid var(--border-subtle, #f0f0f2);
   }
 
   .indicator {
     text-align: center;
-    padding: 8px 4px;
+    padding: 14px 8px;
   }
 </style>

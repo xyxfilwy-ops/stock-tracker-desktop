@@ -19,7 +19,6 @@
     changeClass,
   } from './services/api';
 
-  /* 子组件（由 Worker_Frontend_Components 提供） */
   import Header from './components/Header.svelte';
   import StockTable from './components/StockTable.svelte';
   import HistoryTable from './components/HistoryTable.svelte';
@@ -31,7 +30,7 @@
   // ---------------------------------------------------------------------------
   // 全局状态
   // ---------------------------------------------------------------------------
-  let activeTab: 'holdings' | 'history' | 'manage' = 'holdings';
+  let activeTab: 'holdings' | 'history' = 'holdings';
   let stocks: Stock[] = [];
   let historyRecords: HistoryRecord[] = [];
   let loading = false;
@@ -44,20 +43,19 @@
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
   let marketStatus: MarketStatus | null = null;
+  let addDialogError = '';
+  let addDialogLoading = false;
 
   // ---------------------------------------------------------------------------
   // 派生状态
   // ---------------------------------------------------------------------------
-
-  /** 持仓平均累计涨跌幅（简单平均） */
   $: avgAccChange = stocks.length > 0
     ? Math.round(stocks.reduce((sum, s) => sum + (s.accChange || 0), 0) / stocks.length)
     : 0;
 
-  /** 是否显示空状态 */
-  $: showEmpty = activeTab === 'holdings' && stocks.length === 0 && !loading;
+  $: showEmptyHoldings = activeTab === 'holdings' && stocks.length === 0 && !loading;
+  $: showEmptyHistory = activeTab === 'history' && historyRecords.length === 0;
 
-  /** 刷新进度百分比 */
   $: refreshPercent = refreshProgress.total > 0
     ? (refreshProgress.current / refreshProgress.total) * 100
     : 0;
@@ -65,7 +63,6 @@
   // ---------------------------------------------------------------------------
   // 生命周期
   // ---------------------------------------------------------------------------
-
   onMount(() => {
     loadStocks();
     loadHistory();
@@ -81,7 +78,6 @@
   // ---------------------------------------------------------------------------
   // 数据加载
   // ---------------------------------------------------------------------------
-
   async function loadStocks() {
     try {
       stocks = await GetStocks();
@@ -102,7 +98,6 @@
   async function checkMarketStatus() {
     try {
       marketStatus = await GetMarketStatus();
-      // 交易时段内启动自动刷新（60秒）
       if (marketStatus?.isTrading && !autoRefreshTimer) {
         autoRefreshTimer = setInterval(() => {
           if (!loading) handleRefresh();
@@ -119,21 +114,19 @@
   // ---------------------------------------------------------------------------
   // 刷新行情
   // ---------------------------------------------------------------------------
-
   async function handleRefresh() {
     if (loading) return;
     loading = true;
     refreshProgress = { current: 0, total: stocks.length };
     hideBanner();
 
-    // 订阅进度事件
-    onRefreshProgress((p) => {
+    onRefreshProgress((p: { current: number; total: number }) => {
       refreshProgress = { current: p.current, total: p.total };
     });
 
     try {
       const result: RefreshResult = await RefreshAll();
-      await loadStocks(); // 刷新完成后重新拉取最新数据
+      await loadStocks();
 
       if (result.failed === 0) {
         showToast(`已更新 ${result.updated}/${result.total} 只股票`, 'success');
@@ -155,16 +148,21 @@
   // ---------------------------------------------------------------------------
   // 选入 / 调出
   // ---------------------------------------------------------------------------
-
   async function handleAddStock(code: string) {
+    addDialogLoading = true;
+    addDialogError = '';
     try {
       const newStock = await AddStock(code);
       stocks = [...stocks, newStock];
       showToast(`已选入 ${newStock.name} (${newStock.code})`, 'success');
       showAddDialog = false;
+      addDialogLoading = false;
+      addDialogError = '';
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      showToast(msg, 'error');
+      addDialogError = msg;
+      addDialogLoading = false;
+      // 弹窗不关闭，显示错误
     }
   }
 
@@ -185,13 +183,16 @@
   // ---------------------------------------------------------------------------
   // 对话框控制
   // ---------------------------------------------------------------------------
-
   function openAddDialog() {
     showAddDialog = true;
+    addDialogError = '';
+    addDialogLoading = false;
   }
 
   function closeAddDialog() {
     showAddDialog = false;
+    addDialogError = '';
+    addDialogLoading = false;
   }
 
   function openConfirmDialog(stock: Stock) {
@@ -207,7 +208,6 @@
   // ---------------------------------------------------------------------------
   // 提示展示
   // ---------------------------------------------------------------------------
-
   function showToast(message: string, type: 'success' | 'error' | 'info' = 'success') {
     if (toastTimer) clearTimeout(toastTimer);
     toast = { message, type, visible: true };
@@ -222,14 +222,6 @@
 
   function hideBanner() {
     banner = { ...banner, visible: false };
-  }
-
-  // ---------------------------------------------------------------------------
-  // 工具：按 Tab 切换页面名称
-  // ---------------------------------------------------------------------------
-  function tabLabel(tab: typeof activeTab): string {
-    const map = { holdings: '当前持仓', history: '历史记录', manage: '管理操作' };
-    return map[tab];
   }
 </script>
 
@@ -250,8 +242,8 @@
 {/if}
 
 <div id="app">
-  <!-- 顶栏 -->
-  <Header {loading} onRefresh={handleRefresh} />
+  <!-- 顶栏 — 只保留标题，不加按钮 -->
+  <Header />
 
   <!-- Tab 导航 -->
   <nav class="tab-nav">
@@ -259,6 +251,7 @@
       class="tab-btn"
       class:active={activeTab === 'holdings'}
       on:click={() => (activeTab = 'holdings')}
+      type="button"
     >
       当前持仓
     </button>
@@ -266,6 +259,7 @@
       class="tab-btn"
       class:active={activeTab === 'history'}
       on:click={() => (activeTab = 'history')}
+      type="button"
     >
       历史记录
     </button>
@@ -280,48 +274,41 @@
   <main class="content">
     {#if activeTab === 'holdings'}
       <div class="panel">
-        <!-- 合计行 + 选入按钮 -->
-        <div class="panel-header">
-          <button class="btn-primary" on:click={openAddDialog}>
-            + 选入股票
-          </button>
-          {#if stocks.length > 0}
+        {#if stocks.length > 0}
+          <div class="panel-header">
+            <span class="panel-title">持仓概览</span>
             <div class="summary-text">
               合计累计:
               <span class="change {changeClass(avgAccChange)}">
                 {fmtChange(avgAccChange)}
               </span>
             </div>
-          {/if}
-        </div>
-
-        {#if showEmpty}
+          </div>
+          <StockTable {stocks} {loading} onSelect={openConfirmDialog} />
+        {:else}
           <EmptyState
             title="还没有跟踪任何股票"
-            description="点击「+ 选入股票」开始跟踪"
+            description="点击「选入股票」添加你关注的股票，开始跟踪完整生命周期涨跌幅。"
             hint="支持 sh/sz 开头或纯数字代码，例如：600519 或 sh600519"
+            onAdd={openAddDialog}
           />
-        {:else}
-          <StockTable {stocks} {loading} onSelect={openConfirmDialog} />
         {/if}
       </div>
 
     {:else if activeTab === 'history'}
       <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">历史记录</span>
-          <span class="text-muted" style="font-size: 13px;">
-            共 {historyRecords.length} 条
-          </span>
-        </div>
-        {#if historyRecords.length === 0}
+        {#if historyRecords.length > 0}
+          <div class="panel-header">
+            <span class="panel-title">历史记录</span>
+            <span class="panel-meta">共 {historyRecords.length} 条</span>
+          </div>
+          <HistoryTable history={historyRecords} />
+        {:else}
           <EmptyState
             title="暂无历史记录"
-            description="调出股票后将自动移入此处"
+            description="调出股票后将自动移入此处，你可以回顾每一次选入→调出的完整表现。"
             hint=""
           />
-        {:else}
-          <HistoryTable {historyRecords} />
         {/if}
       </div>
     {/if}
@@ -329,37 +316,85 @@
 </div>
 
 <!-- 选入对话框 -->
-  <AddDialog
-    visible={showAddDialog}
-    onConfirm={handleAddStock}
-    onCancel={closeAddDialog}
-  />
+<AddDialog
+  visible={showAddDialog}
+  onConfirm={handleAddStock}
+  onCancel={closeAddDialog}
+  error={addDialogError}
+  loading={addDialogLoading}
+/>
 
 <!-- 调出确认对话框 -->
-  <ConfirmDialog
-    visible={showConfirmDialog}
-    stock={selectedStock}
-    onConfirm={() => selectedStock && handleRemoveStock(selectedStock.id)}
-    onCancel={closeConfirmDialog}
-  />
+<ConfirmDialog
+  visible={showConfirmDialog}
+  stock={selectedStock}
+  onConfirm={() => selectedStock && handleRemoveStock(selectedStock.id)}
+  onCancel={closeConfirmDialog}
+/>
+
+<!-- 右下角浮动刷新按钮 -->
+<button
+  class="fab"
+  class:fab-spinning={loading}
+  on:click={handleRefresh}
+  disabled={loading}
+  title="刷新行情"
+  type="button"
+>
+  <span class="fab-icon" class:spinning={loading}>⟳</span>
+</button>
 
 <style>
-  /* 本组件仅保留布局相关样式，颜色/字体统一走 design.css */
-  .content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
   .summary-text {
     font-size: 14px;
-    color: var(--text-secondary);
+    color: var(--ink-500);
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
-  .text-muted {
-    color: var(--text-muted);
+  .fab {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: var(--shadow-lg);
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+  }
+
+  .fab:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .fab:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .fab-icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
+  }
+
+  .fab-icon.spinning {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 </style>
