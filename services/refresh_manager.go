@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"stock-tracker/config"
 	"stock-tracker/database"
-	"stock-tracker/providers"
 	"sync"
 	"time"
 
