@@ -1,0 +1,254 @@
+2026-06-19T10:18:05.722Z vite:config bundled config file loaded in 916.01ms
+2026-06-19T10:18:06.315Z vite:config using resolved config: {
+  plugins: [
+    'vite:build-metadata',
+    'vite:watch-package-data',
+    'vite:pre-alias',
+    'alias',
+    'vite-plugin-svelte',
+    'vite:modulepreload-polyfill',
+    'vite:resolve',
+    'vite:html-inline-proxy',
+    'vite:css',
+    'vite:esbuild',
+    'vite:json',
+    'vite:wasm-helper',
+    'vite:worker',
+    'vite:asset',
+    'vite:wasm-fallback',
+    'vite:define',
+    'vite:css-post',
+    'vite:build-html',
+    'vite:worker-import-meta-url',
+    'vite:asset-import-meta-url',
+    'vite:force-systemjs-wrap-complete',
+    'commonjs',
+    'vite:data-uri',
+    'vite:dynamic-import-vars',
+    'vite:import-glob',
+    'vite:build-import-analysis',
+    'vite:esbuild-transpile',
+    'vite:terser',
+    'vite:reporter',
+    'vite:load-fallback'
+  ],
+  build: {
+    target: [ 'es2020', 'edge88', 'firefox78', 'chrome87', 'safari14' ],
+    cssTarget: [ 'es2020', 'edge88', 'firefox78', 'chrome87', 'safari14' ],
+    outDir: 'dist',
+    assetsDir: 'assets',
+    assetsInlineLimit: 4096,
+    cssCodeSplit: true,
+    sourcemap: true,
+    rollupOptions: {},
+    minify: 'esbuild',
+    terserOptions: {},
+    write: true,
+    emptyOutDir: true,
+    copyPublicDir: true,
+    manifest: false,
+    lib: false,
+    ssr: false,
+    ssrManifest: false,
+    ssrEmitAssets: false,
+    reportCompressedSize: true,
+    chunkSizeWarningLimit: 500,
+    watch: null,
+    commonjsOptions: { include: [Array], extensions: [Array] },
+    dynamicImportVarsOptions: { warnOnError: true, exclude: [Array] },
+    modulePreload: { polyfill: true },
+    cssMinify: true
+  },
+  server: {
+    preTransformRequests: true,
+    port: 34115,
+    sourcemapIgnoreList: [Function: isInNodeModules$1],
+    middlewareMode: false,
+    fs: {
+      strict: true,
+      allow: [Array],
+      deny: [Array],
+      cachedChecks: undefined
+    }
+  },
+  resolve: {
+    mainFields: [ 'svelte', 'browser', 'module', 'jsnext:main', 'jsnext' ],
+    conditions: [ 'svelte' ],
+    extensions: [
+      '.mjs',  '.js',
+      '.mts',  '.ts',
+      '.jsx',  '.tsx',
+      '.json'
+    ],
+    dedupe: [
+      'svelte/animate',
+      'svelte/easing',
+      'svelte/internal',
+      'svelte/internal/disclose-version',
+      'svelte/motion',
+      'svelte/ssr',
+      'svelte/store',
+      'svelte/transition',
+      'svelte',
+      'svelte-hmr/runtime/hot-api-esm.js',
+      'svelte-hmr/runtime/proxy-adapter-dom.js',
+      'svelte-hmr'
+    ],
+    preserveSymlinks: false,
+    alias: [ [Object], [Object] ]
+  },
+  optimizeDeps: {
+    holdUntilCrawlEnd: true,
+    include: [
+      'svelte/animate',
+      'svelte/easing',
+      'svelte/internal',
+      'svelte/internal/disclose-version',
+      'svelte/motion',
+      'svelte/store',
+      'svelte/transition',
+      'svelte'
+    ],
+    exclude: [ 'svelte-hmr' ],
+    esbuildOptions: { preserveSymlinks: false }
+  },
+  ssr: {
+    target: 'node',
+    external: [],
+    noExternal: [ 'svelte', /^svelte\// ],
+    optimizeDeps: { noDiscovery: true, esbuildOptions: [Object] }
+  },
+  experimental: { importGlobRestoreExtension: false, hmrPartialAccept: true },
+  configFile: 'E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/vite.config.ts',
+  configFileDependencies: [ 'E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/vite.config.ts' ],
+  inlineConfig: {
+    root: undefined,
+    base: undefined,
+    mode: undefined,
+    configFile: undefined,
+    logLevel: undefined,
+    clearScreen: undefined,
+    build: {}
+  },
+  root: 'E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend',
+  base: '/',
+  decodedBase: '/',
+  rawBase: '/',
+  publicDir: 'E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/public',
+  cacheDir: 'E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/node_modules/.vite',
+  command: 'build',
+  mode: 'production',
+  isWorker: false,
+  mainConfig: null,
+  bundleChain: [],
+  isProduction: true,
+  css: { lightningcss: undefined },
+  esbuild: { jsxDev: false },
+  preview: {
+    port: undefined,
+    strictPort: undefined,
+    host: undefined,
+    allowedHosts: undefined,
+    https: undefined,
+    open: undefined,
+    proxy: undefined,
+    cors: undefined,
+    headers: undefined
+  },
+  envDir: 'E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend',
+  env: { BASE_URL: '/', MODE: 'production', DEV: false, PROD: true },
+  assetsInclude: [Function: assetsInclude],
+  logger: {
+    hasWarned: false,
+    info: [Function: info],
+    warn: [Function: warn],
+    warnOnce: [Function: warnOnce],
+    error: [Function: error],
+    clearScreen: [Function: clearScreen],
+    hasErrorLogged: [Function: hasErrorLogged]
+  },
+  packageCache: Map(1) {
+    'fnpd_E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend' => {
+      dir: 'E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend',
+      data: [Object],
+      hasSideEffects: [Function: hasSideEffects],
+      webResolvedImports: {},
+      nodeResolvedImports: {},
+      setResolvedCache: [Function: setResolvedCache],
+      getResolvedCache: [Function: getResolvedCache]
+    },
+    set: [Function (anonymous)]
+  },
+  createResolver: [Function: createResolver],
+  worker: { format: 'iife', plugins: '() => plugins', rollupOptions: {} },
+  appType: 'spa',
+  webSocketToken: 'G8zMNTzx4VTT',
+  additionalAllowedHosts: [],
+  getSortedPlugins: [Function: getSortedPlugins],
+  getSortedPluginHooks: [Function: getSortedPluginHooks]
+}
+vite v5.4.21 building for production...
+transforming...
+18:18:10 [vite-plugin-svelte] E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/src/components/AddDialog.svelte:49:4 A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.
+47: {#if visible}
+48:   <div class="dialog-overlay" on:click={onCancel}>
+49:     <div class="dialog" on:click|stopPropagation>
+        ^
+50:       <div class="dialog-header">
+51:         <h2 class="dialog-title">选入股票</h2>
+18:18:10 [vite-plugin-svelte] E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/src/components/AddDialog.svelte:49:4 A11y: <div> with click handler must have an ARIA role
+47: {#if visible}
+48:   <div class="dialog-overlay" on:click={onCancel}>
+49:     <div class="dialog" on:click|stopPropagation>
+        ^
+50:       <div class="dialog-header">
+51:         <h2 class="dialog-title">选入股票</h2>
+18:18:10 [vite-plugin-svelte] E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/src/components/AddDialog.svelte:48:2 A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.
+46: 
+47: {#if visible}
+48:   <div class="dialog-overlay" on:click={onCancel}>
+      ^
+49:     <div class="dialog" on:click|stopPropagation>
+50:       <div class="dialog-header">
+18:18:10 [vite-plugin-svelte] E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/src/components/AddDialog.svelte:48:2 A11y: <div> with click handler must have an ARIA role
+46: 
+47: {#if visible}
+48:   <div class="dialog-overlay" on:click={onCancel}>
+      ^
+49:     <div class="dialog" on:click|stopPropagation>
+50:       <div class="dialog-header">
+18:18:10 [vite-plugin-svelte] E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/src/components/ConfirmDialog.svelte:33:4 A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.
+31: {#if visible && stock}
+32:   <div class="dialog-overlay" on:click={onCancel}>
+33:     <div class="dialog" on:click|stopPropagation>
+        ^
+34:       <div class="dialog-header">
+35:         <h2 class="dialog-title">确认调出</h2>
+18:18:10 [vite-plugin-svelte] E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/src/components/ConfirmDialog.svelte:33:4 A11y: <div> with click handler must have an ARIA role
+31: {#if visible && stock}
+32:   <div class="dialog-overlay" on:click={onCancel}>
+33:     <div class="dialog" on:click|stopPropagation>
+        ^
+34:       <div class="dialog-header">
+35:         <h2 class="dialog-title">确认调出</h2>
+18:18:10 [vite-plugin-svelte] E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/src/components/ConfirmDialog.svelte:32:2 A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.
+30: 
+31: {#if visible && stock}
+32:   <div class="dialog-overlay" on:click={onCancel}>
+      ^
+33:     <div class="dialog" on:click|stopPropagation>
+34:       <div class="dialog-header">
+18:18:10 [vite-plugin-svelte] E:/kimi项目/股票基金跟踪/stock-tracker-desktop/frontend/src/components/ConfirmDialog.svelte:32:2 A11y: <div> with click handler must have an ARIA role
+30: 
+31: {#if visible && stock}
+32:   <div class="dialog-overlay" on:click={onCancel}>
+      ^
+33:     <div class="dialog" on:click|stopPropagation>
+34:       <div class="dialog-header">
+✓ 48 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  0.69 kB │ gzip:  0.45 kB
+dist/assets/index-C1KSmDpV.css  24.90 kB │ gzip:  4.38 kB
+dist/assets/index-BC2lrVvu.js   36.21 kB │ gzip: 12.24 kB │ map: 161.31 kB
+✓ built in 4.80s
