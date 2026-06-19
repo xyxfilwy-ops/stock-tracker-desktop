@@ -88,18 +88,22 @@
   // ---------------------------------------------------------------------------
   async function loadStocks() {
     try {
-      stocks = await GetStocks();
+      const result = await GetStocks();
+      stocks = result || [];
     } catch (err) {
       console.error('loadStocks failed:', err);
+      stocks = [];
       showBanner('数据加载失败，请稍后重试');
     }
   }
 
   async function loadHistory() {
     try {
-      historyRecords = await GetHistory();
+      const result = await GetHistory();
+      historyRecords = result || [];
     } catch (err) {
       console.error('loadHistory failed:', err);
+      historyRecords = [];
     }
   }
 

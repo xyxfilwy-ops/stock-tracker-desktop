@@ -123,7 +123,7 @@ func (r *HistoryRepository) scanRow(row *sql.Row) (*HistoryRecord, error) {
 
 // scanRows 从 sql.Rows 扫描多条 HistoryRecord 记录
 func (r *HistoryRepository) scanRows(rows *sql.Rows) ([]HistoryRecord, error) {
-	var records []HistoryRecord
+	records := make([]HistoryRecord, 0)
 	for rows.Next() {
 		var h HistoryRecord
 		if err := rows.Scan(

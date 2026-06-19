@@ -205,7 +205,7 @@ func (r *StockRepository) scanRow(row *sql.Row) (*Stock, error) {
 
 // scanRows 从 sql.Rows 扫描多条 Stock 记录
 func (r *StockRepository) scanRows(rows *sql.Rows) ([]Stock, error) {
-	var stocks []Stock
+	stocks := make([]Stock, 0)
 	for rows.Next() {
 		var s Stock
 		if err := rows.Scan(
