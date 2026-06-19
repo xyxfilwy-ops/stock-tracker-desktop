@@ -20,6 +20,13 @@
     return 'var(--neutral, #6b7280)';
   }
 
+  function formatEntryDate(dateStr: string): string {
+    const d = new Date(dateStr);
+    const month = d.getMonth() + 1;
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${month}/${day}`;
+  }
+
   function isErrorRow(stock: Stock): boolean {
     return stock.status === 'normal' && stock.lastUpdate === undefined && stock.dataSource === undefined;
   }
@@ -36,6 +43,8 @@
       <tr class="header-row">
         <th class="cell">代码</th>
         <th class="cell">名称</th>
+        <th class="cell" style="text-align: right;">选入日期</th>
+        <th class="cell" style="text-align: center;">时间</th>
         <th class="cell" style="text-align: right;">选入价</th>
         <th class="cell" style="text-align: right;">现价</th>
         <th class="cell" style="text-align: right;">日涨跌</th>
@@ -52,6 +61,12 @@
         >
           <td class="cell code">{stock.code}</td>
           <td class="cell name">{stock.name}</td>
+          <td class="cell" style="text-align: right;">
+            <span class="date-text">{formatEntryDate(stock.entryDate)}</span>
+          </td>
+          <td class="cell" style="text-align: center;">
+            <span class="time-text">{stock.entryTime}</span>
+          </td>
           <td class="cell" style="text-align: right;">
             <span class="price">{formatPrice(stock.entryPrice)}</span>
           </td>
@@ -168,6 +183,18 @@
   .name {
     font-weight: 500;
     color: var(--ink-900, #0f172a);
+  }
+
+  .date-text {
+    font-family: var(--font-mono, 'SF Mono', monospace);
+    font-size: 12px;
+    color: var(--ink-500, #6b7280);
+  }
+
+  .time-text {
+    font-family: var(--font-mono, 'SF Mono', monospace);
+    font-size: 12px;
+    color: var(--ink-400, #9ca3af);
   }
 
   .badge {

@@ -144,6 +144,10 @@ export function GetMarketStatus(): Promise<MarketStatus> {
   return wrap(window.go.main.App.GetMarketStatus(), '获取市场状态');
 }
 
+export function ClearHistory(): Promise<void> {
+  return wrap(window.go.main.App.ClearHistory(), '清空历史记录');
+}
+
 // ---------------------------------------------------------------------------
 // 进度事件订阅（RefreshAll 过程中推送）
 // ---------------------------------------------------------------------------

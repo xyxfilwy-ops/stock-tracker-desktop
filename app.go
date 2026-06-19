@@ -63,7 +63,13 @@ func (a *App) GetMarketStatus() *services.MarketStatus {
 	return a.refreshManager.GetMarketStatus()
 }
 
-// GetConfig returns app configuration
+// ClearHistory clears all historical records
+func (a *App) ClearHistory() error {
+	if a.stockService == nil {
+		return fmt.Errorf("stock service not initialized")
+	}
+	return a.stockService.ClearHistory()
+}
 func (a *App) GetConfig() *config.Config {
 	return a.config
 }

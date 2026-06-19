@@ -105,6 +105,15 @@ func (r *HistoryRepository) Count() (int64, error) {
 	return count, nil
 }
 
+// ClearAll 清空所有历史记录
+func (r *HistoryRepository) ClearAll() error {
+	_, err := r.db.Exec("DELETE FROM history;")
+	if err != nil {
+		return fmt.Errorf("clear all history: %w", err)
+	}
+	return nil
+}
+
 // scanRow 从 sql.Row 扫描一条 HistoryRecord 记录
 func (r *HistoryRepository) scanRow(row *sql.Row) (*HistoryRecord, error) {
 	var h HistoryRecord

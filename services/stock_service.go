@@ -232,6 +232,14 @@ func (ss *StockService) Remove(id int64) (*database.HistoryRecord, error) {
 	return createdHistory, nil
 }
 
+// ClearHistory 清空所有历史记录
+func (ss *StockService) ClearHistory() error {
+	if ss.historyRepo == nil {
+		return fmt.Errorf("history repository not initialized")
+	}
+	return ss.historyRepo.ClearAll()
+}
+
 // normalizeCode 标准化股票代码，自动补全 sh/sz 前缀
 // 支持：600519 → sh600519, 000001 → sz000001, sh600519 → sh600519, 300001.SZ → sz300001
 func normalizeCode(code string) string {

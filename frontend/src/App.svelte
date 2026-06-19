@@ -8,6 +8,7 @@
     RemoveStock,
     RefreshAll,
     GetMarketStatus,
+    ClearHistory,
     onRefreshProgress,
     offRefreshProgress,
     type Stock,
@@ -192,6 +193,17 @@
     }
   }
 
+  async function handleClearHistory() {
+    try {
+      await ClearHistory();
+      historyRecords = [];
+      showToast('历史记录已清空', 'success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast(msg, 'error');
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // 对话框控制
   // ---------------------------------------------------------------------------
@@ -331,10 +343,17 @@
       <div class="panel">
         {#if historyRecords.length > 0}
           <div class="panel-header">
-            <span class="panel-title">历史记录</span>
-            <span class="panel-meta">共 {historyRecords.length} 条</span>
+            <div class="panel-header-left">
+              <span class="panel-title">历史记录</span>
+              <span class="panel-count">共 {historyRecords.length} 条</span>
+            </div>
+            <div class="panel-header-right">
+              <button class="btn btn-ghost" on:click={handleClearHistory} type="button">
+                清空历史
+              </button>
+            </div>
           </div>
-          <HistoryTable history={historyRecords} />
+          <HistoryTable history={historyRecords} onClear={handleClearHistory} />
         {:else}
           <EmptyState
             title="暂无历史记录"
@@ -421,6 +440,17 @@
     background: var(--primary-hover, #0f172a);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.04));
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-500, #6b7280);
+    border: 1px solid transparent;
+  }
+  .btn-ghost:hover {
+    background: var(--ink-50, #f9fafb);
+    color: var(--ink-700, #374151);
+    border-color: var(--border, #e5e7eb);
   }
 
   .summary-text {

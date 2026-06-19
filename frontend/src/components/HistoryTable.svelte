@@ -2,6 +2,7 @@
   import type { HistoryRecord } from '../services/api';
 
   export let history: HistoryRecord[] = [];
+  export let onClear: () => void = () => {};
 
   function formatPrice(price: number): string {
     return (price / 100).toFixed(2);
