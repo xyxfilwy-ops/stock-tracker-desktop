@@ -274,16 +274,28 @@
   <main class="content">
     {#if activeTab === 'holdings'}
       <div class="panel">
-        {#if stocks.length > 0}
-          <div class="panel-header">
+        <div class="panel-header">
+          <div class="panel-header-left">
             <span class="panel-title">持仓概览</span>
-            <div class="summary-text">
-              合计累计:
-              <span class="change {changeClass(avgAccChange)}">
-                {fmtChange(avgAccChange)}
-              </span>
-            </div>
+            {#if stocks.length > 0}
+              <span class="panel-count">共 {stocks.length} 只</span>
+            {/if}
           </div>
+          <div class="panel-header-right">
+            {#if stocks.length > 0}
+              <div class="summary-text">
+                合计:
+                <span class="change {changeClass(avgAccChange)}">
+                  {fmtChange(avgAccChange)}
+                </span>
+              </div>
+            {/if}
+            <button class="btn btn-primary" on:click={openAddDialog} type="button">
+              + 选入
+            </button>
+          </div>
+        </div>
+        {#if stocks.length > 0}
           <StockTable {stocks} {loading} onSelect={openConfirmDialog} />
         {:else}
           <EmptyState
@@ -345,6 +357,52 @@
 </button>
 
 <style>
+  .panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .panel-count {
+    font-size: 13px;
+    color: var(--ink-400, #9ca3af);
+    font-weight: 400;
+  }
+
+  .panel-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 8px;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--primary, #1e293b);
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: var(--primary-hover, #0f172a);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.04));
+  }
+
   .summary-text {
     font-size: 14px;
     color: var(--ink-500);

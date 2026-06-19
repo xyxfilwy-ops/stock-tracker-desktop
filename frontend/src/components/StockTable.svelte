@@ -24,7 +24,7 @@
     return stock.status === 'normal' && stock.lastUpdate === undefined && stock.dataSource === undefined;
   }
 
-  function handleRowClick(stock: Stock) {
+  function handleRemoveClick(stock: Stock) {
     if (stock.status === 'suspended') return;
     onSelect(stock);
   }
@@ -40,7 +40,7 @@
         <th class="cell" style="text-align: right;">现价</th>
         <th class="cell" style="text-align: right;">日涨跌</th>
         <th class="cell" style="text-align: right;">累计涨跌</th>
-        <th class="cell" style="width: 40px;"></th>
+        <th class="cell" style="text-align: center; width: 60px;">操作</th>
       </tr>
     </thead>
     <tbody>
@@ -49,8 +49,6 @@
           class="data-row"
           class:suspended={stock.status === 'suspended'}
           class:error={isErrorRow(stock)}
-          class:clickable={stock.status !== 'suspended'}
-          on:click={() => handleRowClick(stock)}
         >
           <td class="cell code">{stock.code}</td>
           <td class="cell name">{stock.name}</td>
@@ -68,7 +66,7 @@
             {#if stock.status === 'suspended'}
               <span class="muted">—</span>
             {:else}
-              <span class="badge badge-up" style="color: {getChangeColor(stock.dailyChange)}; background: {stock.dailyChange > 0 ? 'var(--positive-bg)' : stock.dailyChange < 0 ? 'var(--negative-bg)' : 'rgba(107,114,128,0.06)'};">
+              <span class="badge" style="color: {getChangeColor(stock.dailyChange)}; background: {stock.dailyChange > 0 ? 'var(--positive-bg)' : stock.dailyChange < 0 ? 'var(--negative-bg)' : 'rgba(107,114,128,0.06)'};">
                 {formatChange(stock.dailyChange)}
               </span>
             {/if}
@@ -77,18 +75,23 @@
             {#if stock.status === 'suspended'}
               <span class="muted">—</span>
             {:else}
-              <span class="badge badge-up" style="color: {getChangeColor(stock.accChange)}; background: {stock.accChange > 0 ? 'var(--positive-bg)' : stock.accChange < 0 ? 'var(--negative-bg)' : 'rgba(107,114,128,0.06)'};">
+              <span class="badge" style="color: {getChangeColor(stock.accChange)}; background: {stock.accChange > 0 ? 'var(--positive-bg)' : stock.accChange < 0 ? 'var(--negative-bg)' : 'rgba(107,114,128,0.06)'};">
                 {formatChange(stock.accChange)}
               </span>
             {/if}
           </td>
-          <td class="cell indicator">
+          <td class="cell" style="text-align: center;">
             {#if stock.status === 'suspended'}
               <span class="suspended-badge">停牌</span>
-            {:else if isErrorRow(stock)}
-              <span class="error-icon" title="获取失败">!</span>
-            {:else if loading}
-              <span class="pulse-dot"></span>
+            {:else}
+              <button
+                class="remove-btn"
+                on:click={() => handleRemoveClick(stock)}
+                title="调出"
+                type="button"
+              >
+                调出
+              </button>
             {/if}
           </td>
         </tr>
@@ -143,10 +146,6 @@
     background: var(--surface-hover, #fafbfc);
   }
 
-  .data-row.clickable {
-    cursor: pointer;
-  }
-
   .data-row.suspended {
     color: var(--ink-400, #9ca3af);
   }
@@ -195,32 +194,24 @@
     color: var(--ink-700, #374151);
   }
 
-  .pulse-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--primary, #1e293b);
-    animation: pulse 1.5s ease-in-out infinite;
+  .remove-btn {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--surface, #ffffff);
+    color: var(--ink-500, #6b7280);
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 0.3; transform: scale(0.8); }
-    50%      { opacity: 1;   transform: scale(1.2); }
-  }
-
-  .error-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--warning, #c8781a);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: help;
+  .remove-btn:hover {
+    background: var(--positive, #b9403a);
+    color: #ffffff;
+    border-color: var(--positive, #b9403a);
   }
 
   .suspended-badge {
@@ -233,10 +224,5 @@
     color: var(--ink-400, #9ca3af);
     background: var(--ink-50, #f9fafb);
     border: 1px solid var(--border-subtle, #f0f0f2);
-  }
-
-  .indicator {
-    text-align: center;
-    padding: 14px 8px;
   }
 </style>
