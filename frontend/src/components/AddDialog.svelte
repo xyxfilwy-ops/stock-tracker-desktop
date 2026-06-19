@@ -50,11 +50,11 @@
 </script>
 
 {#if visible}
-  <div class="dialog-overlay" on:click={onCancel}>
-    <div class="dialog" on:click|stopPropagation>
+  <div class="dialog-overlay">
+    <div class="dialog" on:keydown={handleKeydown} tabindex="-1" role="dialog" aria-modal="true">
       <div class="dialog-header">
         <h2 class="dialog-title">选入股票</h2>
-        <button class="dialog-close" on:click={onCancel} type="button">×</button>
+        <button class="dialog-close" on:click={onCancel} type="button" aria-label="关闭">×</button>
       </div>
       <div class="dialog-body">
         <div class="dialog-input-group">
