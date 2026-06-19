@@ -63,7 +63,15 @@
   // ---------------------------------------------------------------------------
   // 生命周期
   // ---------------------------------------------------------------------------
+  let initError = '';
+
   onMount(() => {
+    // 检查 Wails 绑定是否就绪
+    if (typeof window === 'undefined' || !window.go || !window.go.main || !window.go.main.App) {
+      initError = '应用初始化失败：后端绑定未就绪，请重启程序';
+      console.error('window.go not available:', typeof window !== 'undefined' ? window.go : 'window undefined');
+      return;
+    }
     loadStocks();
     loadHistory();
     checkMarketStatus();
@@ -244,6 +252,14 @@
 <div id="app">
   <!-- 顶栏 — 只保留标题，不加按钮 -->
   <Header />
+
+  <!-- 初始化错误提示 -->
+  {#if initError}
+    <div class="init-error">
+      <span class="init-error-icon">⚠</span>
+      <span class="init-error-text">{initError}</span>
+    </div>
+  {/if}
 
   <!-- Tab 导航 -->
   <nav class="tab-nav">
@@ -449,6 +465,27 @@
 
   .fab-icon.spinning {
     animation: spin 1s linear infinite;
+  }
+
+  .init-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--error-bg, #fef2f2);
+    border: 1px solid rgba(185, 28, 28, 0.15);
+    border-radius: var(--radius-md, 8px);
+    color: var(--error-text, #b91c1c);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .init-error-icon {
+    font-size: 16px;
+  }
+
+  .init-error-text {
+    line-height: 1.5;
   }
 
   @keyframes spin {
