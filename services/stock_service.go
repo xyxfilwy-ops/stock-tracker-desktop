@@ -242,27 +242,32 @@ func (ss *StockService) Remove(id int64) (*database.HistoryRecord, error) {
 		}
 	}
 
-	// 3. 计算持股天数和区间涨跌幅
+	// 3. 计算持股天数、持仓时间和区间涨跌幅
 	now := time.Now()
 	exitDate := now.Format("2006-01-02")
-	holdingDays := CalculateHoldingDays(stock.EntryDate, exitDate)
+	holdingDays, err := database.CalculateHoldingDays(stock.EntryDate, exitDate)
+	if err != nil {
+		holdingDays = 0
+	}
+	holdingDuration := database.FormatHoldingDuration(holdingDays)
 	exitPrice := database.ToPriceCents(quote.Price)
-	totalReturn := CalculateAccChange(exitPrice, stock.EntryPrice, stock.AdjustFactor)
+	totalReturn := database.CalculateAccChange(exitPrice, stock.EntryPrice, stock.AdjustFactor)
 
 	datetimeStr := now.Format("2006-01-02 15:04:05")
 
 	// 4. 写入 history 表
 	history := &database.HistoryRecord{
-		Code:        stock.Code,
-		Name:        stock.Name,
-		EntryDate:   stock.EntryDate,
-		EntryPrice:  stock.EntryPrice,
-		ExitDate:    exitDate,
-		ExitPrice:   exitPrice,
-		HoldingDays: holdingDays,
-		TotalReturn: totalReturn,
-		DataSource:  quote.Source,
-		CreatedAt:   datetimeStr,
+		Code:            stock.Code,
+		Name:            stock.Name,
+		EntryDate:       stock.EntryDate,
+		EntryPrice:      stock.EntryPrice,
+		ExitDate:        exitDate,
+		ExitPrice:       exitPrice,
+		HoldingDays:     holdingDays,
+		HoldingDuration: holdingDuration,
+		TotalReturn:     totalReturn,
+		DataSource:      quote.Source,
+		CreatedAt:       datetimeStr,
 	}
 
 	createdHistory, err := ss.historyRepo.Create(history)

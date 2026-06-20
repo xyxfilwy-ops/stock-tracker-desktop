@@ -19,15 +19,21 @@
     return 'var(--neutral, #6b7280)';
   }
 
-  function formatDateRange(entry: string, exit: string): string {
-    const entryFmt = formatShortDate(entry);
-    const exitFmt = formatShortDate(exit);
-    return `${entryFmt} → ${exitFmt}`;
+  function getReturnBg(bp: number): string {
+    if (bp > 0) return 'rgba(185, 64, 58, 0.08)';
+    if (bp < 0) return 'rgba(46, 139, 87, 0.08)';
+    return 'rgba(107, 114, 128, 0.06)';
   }
 
   function formatShortDate(dateStr: string): string {
     const d = new Date(dateStr);
     return `${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function formatDateRange(entry: string, exit: string): string {
+    const entryFmt = formatShortDate(entry);
+    const exitFmt = formatShortDate(exit);
+    return `${entryFmt} → ${exitFmt}`;
   }
 </script>
 
@@ -37,8 +43,9 @@
       <tr class="header-row">
         <th class="cell">代码</th>
         <th class="cell">名称</th>
-        <th class="cell" style="text-align: center;">选入 → 调出</th>
-        <th class="cell" style="text-align: right;">天数</th>
+        <th class="cell" style="text-align: right;">选入价</th>
+        <th class="cell" style="text-align: right;">调出价</th>
+        <th class="cell" style="text-align: center;">持仓时间</th>
         <th class="cell" style="text-align: right;">收益</th>
       </tr>
     </thead>
@@ -47,14 +54,20 @@
         <tr class="data-row">
           <td class="cell code">{record.code}</td>
           <td class="cell name">{record.name}</td>
+          <td class="cell" style="text-align: right;">
+            <span class="price">{formatPrice(record.entryPrice)}</span>
+          </td>
+          <td class="cell" style="text-align: right;">
+            <span class="price">{formatPrice(record.exitPrice)}</span>
+          </td>
           <td class="cell" style="text-align: center;">
-            <span class="date-range">{formatDateRange(record.entryDate, record.exitDate)}</span>
+            <span class="duration" title="{record.entryDate} → {record.exitDate}">
+              {record.holdingDuration}
+              <span class="days-hint">({record.holdingDays}天)</span>
+            </span>
           </td>
           <td class="cell" style="text-align: right;">
-            <span class="days">{record.holdingDays}天</span>
-          </td>
-          <td class="cell" style="text-align: right;">
-            <span class="badge" style="color: {getReturnColor(record.totalReturn)}; background: {record.totalReturn > 0 ? 'var(--positive-bg)' : record.totalReturn < 0 ? 'var(--negative-bg)' : 'rgba(107,114,128,0.06)'};">
+            <span class="badge" style="color: {getReturnColor(record.totalReturn)}; background: {getReturnBg(record.totalReturn)};">
               {formatReturn(record.totalReturn)}
             </span>
           </td>
@@ -88,7 +101,7 @@
     font-weight: 600;
     color: var(--ink-400, #9ca3af);
     text-align: left;
-    padding: 12px 16px;
+    padding: 10px 10px;
     white-space: nowrap;
     border-bottom: 1px solid var(--border-subtle, #f0f0f2);
     text-transform: uppercase;
@@ -100,7 +113,7 @@
   }
 
   .data-row td {
-    padding: 14px 16px;
+    padding: 10px 10px;
     vertical-align: middle;
     white-space: nowrap;
     border-bottom: 1px solid var(--border-subtle, #f0f0f2);
@@ -111,7 +124,7 @@
   }
 
   .cell {
-    padding: 14px 16px;
+    padding: 10px 10px;
   }
 
   .code {
@@ -126,16 +139,22 @@
     color: var(--ink-900, #0f172a);
   }
 
-  .date-range {
+  .price {
     font-family: var(--font-mono, 'SF Mono', monospace);
     font-size: 13px;
-    color: var(--ink-500, #6b7280);
-    letter-spacing: 0.01em;
+    color: var(--ink-700, #374151);
+    font-variant-numeric: tabular-nums;
   }
 
-  .days {
+  .duration {
     font-size: 13px;
-    color: var(--ink-500, #6b7280);
+    color: var(--ink-700, #374151);
+    cursor: default;
+  }
+
+  .days-hint {
+    font-size: 12px;
+    color: var(--ink-400, #9ca3af);
   }
 
   .badge {

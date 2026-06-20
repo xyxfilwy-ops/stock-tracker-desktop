@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -61,17 +62,18 @@ type Stock struct {
 
 // HistoryRecord 表示已调出股票的历史记录
 type HistoryRecord struct {
-	ID           int64  `json:"id"`
-	Code         string `json:"code"`          // 股票代码
-	Name         string `json:"name"`          // 股票名称（调出时的名称）
-	EntryDate    string `json:"entryDate"`    // 选入日期
-	EntryPrice   int64  `json:"entryPrice"`   // 选入价（前复权，分）
-	ExitDate     string `json:"exitDate"`     // 调出日期
-	ExitPrice    int64  `json:"exitPrice"`    // 调出价（分）
-	HoldingDays  int64  `json:"holdingDays"`  // 持股天数
-	TotalReturn  int64  `json:"totalReturn"`  // 区间收益（BP，基于前复权）
-	DataSource   string `json:"dataSource"`   // 数据源标识
-	CreatedAt    string `json:"createdAt"`    // 记录创建时间
+	ID              int64  `json:"id"`
+	Code            string `json:"code"`           // 股票代码
+	Name            string `json:"name"`           // 股票名称（调出时的名称）
+	EntryDate       string `json:"entryDate"`     // 选入日期
+	EntryPrice      int64  `json:"entryPrice"`    // 选入价（前复权，分）
+	ExitDate        string `json:"exitDate"`     // 调出日期
+	ExitPrice       int64  `json:"exitPrice"`    // 调出价（分）
+	HoldingDays     int64  `json:"holdingDays"`  // 持股天数
+	HoldingDuration string `json:"holdingDuration"` // 持仓时间（如"1年3个月15天"）
+	TotalReturn     int64  `json:"totalReturn"`  // 区间收益（BP，基于前复权）
+	DataSource      string `json:"dataSource"`   // 数据源标识
+	CreatedAt       string `json:"createdAt"`    // 记录创建时间
 }
 
 // DailySnapshot 表示每日收盘价快照（用于趋势分析）
@@ -131,6 +133,36 @@ func CalculateHoldingDays(entryDate, exitDate string) (int64, error) {
 		return 0, fmt.Errorf("parse exit_date: %w", err)
 	}
 	return int64(exit.Sub(entry).Hours() / 24), nil
+}
+
+// FormatHoldingDuration 将天数格式化为"X年Y个月Z天"
+// 规则：30天≈1个月，12个月=1年
+func FormatHoldingDuration(days int64) string {
+	if days < 0 {
+		days = 0
+	}
+	if days == 0 {
+		return "0天"
+	}
+
+	years := days / 365
+	remainingDays := days % 365
+
+	months := remainingDays / 30
+	remainingDays = remainingDays % 30
+
+	parts := []string{}
+	if years > 0 {
+		parts = append(parts, fmt.Sprintf("%d年", years))
+	}
+	if months > 0 {
+		parts = append(parts, fmt.Sprintf("%d个月", months))
+	}
+	if remainingDays > 0 || len(parts) == 0 {
+		parts = append(parts, fmt.Sprintf("%d天", remainingDays))
+	}
+
+	return strings.Join(parts, "")
 }
 
 // CalculateTotalReturn 计算区间收益（BP，基于前复权）

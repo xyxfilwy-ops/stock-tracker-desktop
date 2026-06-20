@@ -45,22 +45,26 @@ func (db *DB) migrate() (err error) {
 	// 2. 创建 history 表（已调出）
 	_, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS history (
-			id             INTEGER PRIMARY KEY AUTOINCREMENT,
-			code           TEXT    NOT NULL,
-			name           TEXT    NOT NULL,
-			entry_date     TEXT    NOT NULL,
-			entry_price    INTEGER NOT NULL,
-			exit_date      TEXT    NOT NULL,
-			exit_price     INTEGER NOT NULL,
-			holding_days   INTEGER NOT NULL,
-			total_return   INTEGER NOT NULL,
-			data_source    TEXT    DEFAULT 'tencent',
-			created_at     TEXT    NOT NULL
+			id               INTEGER PRIMARY KEY AUTOINCREMENT,
+			code             TEXT    NOT NULL,
+			name             TEXT    NOT NULL,
+			entry_date       TEXT    NOT NULL,
+			entry_price      INTEGER NOT NULL,
+			exit_date        TEXT    NOT NULL,
+			exit_price       INTEGER NOT NULL,
+			holding_days     INTEGER NOT NULL,
+			holding_duration TEXT    NOT NULL DEFAULT '',
+			total_return     INTEGER NOT NULL,
+			data_source      TEXT    DEFAULT 'tencent',
+			created_at       TEXT    NOT NULL
 		);
 	`)
 	if err != nil {
 		return fmt.Errorf("create history table: %w", err)
 	}
+
+	// 2.5 迁移：为旧表添加 holding_duration 列（如果不存在）
+	_, _ = tx.Exec(`ALTER TABLE history ADD COLUMN IF NOT EXISTS holding_duration TEXT NOT NULL DEFAULT '';`)
 
 	// 3. 创建 daily_snapshots 表（每日快照，级联删除）
 	_, err = tx.Exec(`

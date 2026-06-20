@@ -46,6 +46,7 @@ export interface HistoryRecord {
   exitDate: string;
   exitPrice: number;      // 调出价（分）
   holdingDays: number;    // 持股天数
+  holdingDuration: string; // 持仓时间（如"1年3个月15天"）
   totalReturn: number;    // 区间收益（BP）
 }
 
