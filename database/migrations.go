@@ -2,6 +2,17 @@ package database
 
 import "fmt"
 
+// columnExists 检查表中是否存在指定列
+func columnExists(db *DB, table, column string) bool {
+	var count int
+	// pragma_table_info 返回表的列信息
+	row := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?;", table, column)
+	if err := row.Scan(&count); err != nil {
+		return false
+	}
+	return count > 0
+}
+
 // migrate 执行数据库迁移：创建表、索引、设置 WAL 和 busy_timeout
 func (db *DB) migrate() (err error) {
 	tx, err := db.conn.Begin()
@@ -42,7 +53,7 @@ func (db *DB) migrate() (err error) {
 		return fmt.Errorf("create stocks table: %w", err)
 	}
 
-	// 2. 创建 history 表（已调出）
+	// 2. 创建 history 表（已调出）—— 使用最新完整 schema
 	_, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS history (
 			id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,9 +77,26 @@ func (db *DB) migrate() (err error) {
 	}
 
 	// 2.5 迁移：为旧表添加新列（如果不存在）
-	_, _ = tx.Exec(`ALTER TABLE history ADD COLUMN IF NOT EXISTS entry_time TEXT NOT NULL DEFAULT '';`)
-	_, _ = tx.Exec(`ALTER TABLE history ADD COLUMN IF NOT EXISTS exit_time TEXT NOT NULL DEFAULT '';`)
-	_, _ = tx.Exec(`ALTER TABLE history ADD COLUMN IF NOT EXISTS holding_duration TEXT NOT NULL DEFAULT '';`)
+	// 注意：SQLite ALTER TABLE ADD COLUMN 不支持 IF NOT EXISTS（部分版本），
+	// 使用 pragma_table_info 先检查列是否存在，避免错误
+	if !columnExists(db, "history", "entry_time") {
+		_, err = tx.Exec(`ALTER TABLE history ADD COLUMN entry_time TEXT NOT NULL DEFAULT '';`)
+		if err != nil {
+			return fmt.Errorf("add column entry_time: %w", err)
+		}
+	}
+	if !columnExists(db, "history", "exit_time") {
+		_, err = tx.Exec(`ALTER TABLE history ADD COLUMN exit_time TEXT NOT NULL DEFAULT '';`)
+		if err != nil {
+			return fmt.Errorf("add column exit_time: %w", err)
+		}
+	}
+	if !columnExists(db, "history", "holding_duration") {
+		_, err = tx.Exec(`ALTER TABLE history ADD COLUMN holding_duration TEXT NOT NULL DEFAULT '';`)
+		if err != nil {
+			return fmt.Errorf("add column holding_duration: %w", err)
+		}
+	}
 
 	// 3. 创建 daily_snapshots 表（每日快照，级联删除）
 	_, err = tx.Exec(`
