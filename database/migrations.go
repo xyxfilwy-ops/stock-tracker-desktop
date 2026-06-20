@@ -70,13 +70,14 @@ func (db *DB) migrate() (err error) {
 	}
 
 	// 2.5 迁移：为旧表添加新列（如果不存在）
-	if err := addColumnIfMissing(tx, "history", "entry_time", "TEXT NOT NULL DEFAULT ''"); err != nil {
+	// 注意：PRAGMA 在事务中不可靠，所以 PRAGMA 查询在 db.conn 上直接执行（非事务），ALTER TABLE 在事务内执行
+	if err := addColumnIfMissing(db.conn, tx, "history", "entry_time", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return fmt.Errorf("migrate history.entry_time: %w", err)
 	}
-	if err := addColumnIfMissing(tx, "history", "exit_time", "TEXT NOT NULL DEFAULT ''"); err != nil {
+	if err := addColumnIfMissing(db.conn, tx, "history", "exit_time", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return fmt.Errorf("migrate history.exit_time: %w", err)
 	}
-	if err := addColumnIfMissing(tx, "history", "holding_duration", "TEXT NOT NULL DEFAULT ''"); err != nil {
+	if err := addColumnIfMissing(db.conn, tx, "history", "holding_duration", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return fmt.Errorf("migrate history.holding_duration: %w", err)
 	}
 
@@ -113,20 +114,23 @@ func (db *DB) migrate() (err error) {
 }
 
 // addColumnIfMissing 使用 PRAGMA table_info 检查列是否存在，不存在则添加
-// 如果 ALTER TABLE 因列已存在而失败，自动忽略该错误
-func addColumnIfMissing(tx *sql.Tx, table, column, def string) error {
-	// 1. 通过 PRAGMA table_info 检查列是否存在
-	rows, err := tx.Query("PRAGMA table_info(" + table + ")")
+// 注意：PRAGMA 在事务中不可靠（modernc.org/sqlite 中可能返回空结果），
+// 所以 PRAGMA 查询在 db 上直接执行（非事务），ALTER TABLE 在事务内执行。
+func addColumnIfMissing(db *sql.DB, tx *sql.Tx, table, column, def string) error {
+	// 1. 在事务外执行 PRAGMA table_info（避免事务中 PRAGMA 不可靠）
+	rows, err := db.Query("PRAGMA table_info(" + table + ")")
 	if err != nil {
-		return fmt.Errorf("pragma table_info: %w", err)
+		return fmt.Errorf("pragma table_info(%s): %w", table, err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var cid int
-		var name, typ, notNull, dfltValue, pk string
+		var name, typ string
+		var notNull, pk int
+		var dfltValue sql.NullString
 		if err := rows.Scan(&cid, &name, &typ, &notNull, &dfltValue, &pk); err != nil {
-			continue
+			return fmt.Errorf("scan pragma table_info row: %w", err)
 		}
 		if name == column {
 			return nil // 列已存在
@@ -136,10 +140,9 @@ func addColumnIfMissing(tx *sql.Tx, table, column, def string) error {
 		return fmt.Errorf("iterate pragma table_info: %w", err)
 	}
 
-	// 2. 列不存在，执行 ALTER TABLE ADD COLUMN
+	// 2. 列不存在，在事务内执行 ALTER TABLE
 	_, err = tx.Exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + def + ";")
 	if err != nil {
-		// 如果是重复列错误，忽略
 		errStr := strings.ToLower(err.Error())
 		if strings.Contains(errStr, "duplicate column") ||
 			strings.Contains(errStr, "already has column") ||
