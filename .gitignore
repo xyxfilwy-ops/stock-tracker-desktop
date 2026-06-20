@@ -40,3 +40,5 @@ wailsjs/
 # Environment
 .env
 .env.local
+build/bin/StockTracker-1.0.0-windows-amd64-installer.exe
+build/wails_nsis_build.log

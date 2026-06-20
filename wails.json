@@ -24,6 +24,7 @@
   "build": {
     "nsisType": "multiple",
     "webview2": "embed",
+    "nsisPath": "C:\\Program Files (x86)\\NSIS\\makensis.exe",
     "updater": {
       "type": "none"
     }

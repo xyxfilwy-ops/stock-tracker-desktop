@@ -1,0 +1,24 @@
+Return code: 0
+STDOUT:
+Processing config: C:\Program Files (x86)\NSIS\nsisconf.nsh
+Processing script file: "E:\kimi��Ŀ\��Ʊ�������\stock-tracker-desktop\build\nsis\StockTracker.nsi" (ACP)
+
+Processed 1 file, writing output (x86-unicode):
+
+Output: "E:\kimi��Ŀ\��Ʊ�������\stock-tracker-desktop\build\nsis\StockTracker-1.0.0-windows-amd64-installer.exe"
+Install: 4 pages (256 bytes), 1 section (2072 bytes), 365 instructions (10220 bytes), 188 strings (4350 bytes), 1 language table (302 bytes).
+Uninstall: 4 pages (320 bytes), 1 section (2072 bytes), 353 instructions (9884 bytes), 173 strings (3806 bytes), 1 language table (290 bytes).
+Datablock optimizer saved 1888 bytes (~0.0%).
+
+Using zlib compression.
+
+EXE header size:               52736 / 39936 bytes
+Install code:                   3468 / 17664 bytes
+Install data:                7240007 / 15200536 bytes
+Uninstall code+data:           26433 / 30753 bytes
+CRC (0x3F68948C):                  4 / 4 bytes
+
+Total size:                  7322648 / 15288893 bytes (47.8%)
+
+STDERR:
+(empty)
