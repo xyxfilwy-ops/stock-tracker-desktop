@@ -1,27 +1,15 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 )
 
 // migrate 执行数据库迁移：创建表、索引、设置 WAL 和 busy_timeout
+// 修复：避免在事务中使用 PRAGMA，直接 ALTER TABLE 并忽略列已存在错误
 func (db *DB) migrate() (err error) {
-	tx, err := db.conn.Begin()
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		} else {
-			err = tx.Commit()
-		}
-	}()
-
 	// 1. 创建 stocks 表（当前持仓）
-	_, err = tx.Exec(`
+	_, err = db.conn.Exec(`
 		CREATE TABLE IF NOT EXISTS stocks (
 			id             INTEGER PRIMARY KEY AUTOINCREMENT,
 			code           TEXT    NOT NULL UNIQUE,
@@ -47,7 +35,7 @@ func (db *DB) migrate() (err error) {
 	}
 
 	// 2. 创建 history 表（已调出）—— 使用最新完整 schema
-	_, err = tx.Exec(`
+	_, err = db.conn.Exec(`
 		CREATE TABLE IF NOT EXISTS history (
 			id               INTEGER PRIMARY KEY AUTOINCREMENT,
 			code             TEXT    NOT NULL,
@@ -69,20 +57,29 @@ func (db *DB) migrate() (err error) {
 		return fmt.Errorf("create history table: %w", err)
 	}
 
-	// 2.5 迁移：为旧表添加新列（如果不存在）
-	// 注意：PRAGMA 在事务中不可靠，所以 PRAGMA 查询在 db.conn 上直接执行（非事务），ALTER TABLE 在事务内执行
-	if err := addColumnIfMissing(db.conn, tx, "history", "entry_time", "TEXT NOT NULL DEFAULT ''"); err != nil {
-		return fmt.Errorf("migrate history.entry_time: %w", err)
+	// 2.5 迁移：直接 ALTER TABLE 添加列，忽略列已存在错误
+	// 不用 PRAGMA 检测，因为 database/sql 中事务内 PRAGMA 不可靠
+	addColumns := []struct{ col, def string }{
+		{"entry_time", "TEXT NOT NULL DEFAULT ''"},
+		{"exit_time", "TEXT NOT NULL DEFAULT ''"},
+		{"holding_duration", "TEXT NOT NULL DEFAULT ''"},
 	}
-	if err := addColumnIfMissing(db.conn, tx, "history", "exit_time", "TEXT NOT NULL DEFAULT ''"); err != nil {
-		return fmt.Errorf("migrate history.exit_time: %w", err)
-	}
-	if err := addColumnIfMissing(db.conn, tx, "history", "holding_duration", "TEXT NOT NULL DEFAULT ''"); err != nil {
-		return fmt.Errorf("migrate history.holding_duration: %w", err)
+	for _, c := range addColumns {
+		_, err = db.conn.Exec("ALTER TABLE history ADD COLUMN " + c.col + " " + c.def + ";")
+		if err != nil {
+			errStr := strings.ToLower(err.Error())
+			if strings.Contains(errStr, "duplicate column") ||
+				strings.Contains(errStr, "already has column") ||
+				strings.Contains(errStr, "column already exists") {
+				// 列已存在，忽略
+				continue
+			}
+			return fmt.Errorf("alter table add %s: %w", c.col, err)
+		}
 	}
 
 	// 3. 创建 daily_snapshots 表（每日快照，级联删除）
-	_, err = tx.Exec(`
+	_, err = db.conn.Exec(`
 		CREATE TABLE IF NOT EXISTS daily_snapshots (
 			id          INTEGER PRIMARY KEY AUTOINCREMENT,
 			stock_id    INTEGER NOT NULL,
@@ -104,52 +101,11 @@ func (db *DB) migrate() (err error) {
 		`CREATE INDEX IF NOT EXISTS idx_snapshots_stock_date ON daily_snapshots(stock_id, date);`,
 	}
 	for _, idx := range indexes {
-		_, err = tx.Exec(idx)
+		_, err = db.conn.Exec(idx)
 		if err != nil {
 			return fmt.Errorf("create index: %w", err)
 		}
 	}
 
-	return nil
-}
-
-// addColumnIfMissing 使用 PRAGMA table_info 检查列是否存在，不存在则添加
-// 注意：PRAGMA 在事务中不可靠（modernc.org/sqlite 中可能返回空结果），
-// 所以 PRAGMA 查询在 db 上直接执行（非事务），ALTER TABLE 在事务内执行。
-func addColumnIfMissing(db *sql.DB, tx *sql.Tx, table, column, def string) error {
-	// 1. 在事务外执行 PRAGMA table_info（避免事务中 PRAGMA 不可靠）
-	rows, err := db.Query("PRAGMA table_info(" + table + ")")
-	if err != nil {
-		return fmt.Errorf("pragma table_info(%s): %w", table, err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var cid int
-		var name, typ string
-		var notNull, pk int
-		var dfltValue sql.NullString
-		if err := rows.Scan(&cid, &name, &typ, &notNull, &dfltValue, &pk); err != nil {
-			return fmt.Errorf("scan pragma table_info row: %w", err)
-		}
-		if name == column {
-			return nil // 列已存在
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iterate pragma table_info: %w", err)
-	}
-
-	// 2. 列不存在，在事务内执行 ALTER TABLE
-	_, err = tx.Exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + def + ";")
-	if err != nil {
-		errStr := strings.ToLower(err.Error())
-		if strings.Contains(errStr, "duplicate column") ||
-			strings.Contains(errStr, "already has column") ||
-			strings.Contains(errStr, "column already exists") {
-			return nil
-		}
-		return fmt.Errorf("alter table add %s: %w", column, err)
-	}
 	return nil
 }
