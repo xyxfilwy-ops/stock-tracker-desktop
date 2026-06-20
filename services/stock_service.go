@@ -245,6 +245,7 @@ func (ss *StockService) Remove(id int64) (*database.HistoryRecord, error) {
 	// 3. 计算持股天数、持仓时间和区间涨跌幅
 	now := time.Now()
 	exitDate := now.Format("2006-01-02")
+	exitTime := now.Format("15:04:05")
 	holdingDays, err := database.CalculateHoldingDays(stock.EntryDate, exitDate)
 	if err != nil {
 		holdingDays = 0
@@ -260,8 +261,10 @@ func (ss *StockService) Remove(id int64) (*database.HistoryRecord, error) {
 		Code:            stock.Code,
 		Name:            stock.Name,
 		EntryDate:       stock.EntryDate,
+		EntryTime:       stock.EntryTime,
 		EntryPrice:      stock.EntryPrice,
 		ExitDate:        exitDate,
+		ExitTime:        exitTime,
 		ExitPrice:       exitPrice,
 		HoldingDays:     holdingDays,
 		HoldingDuration: holdingDuration,

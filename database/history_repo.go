@@ -19,14 +19,14 @@ func NewHistoryRepository(db *DB) *HistoryRepository {
 func (r *HistoryRepository) Create(h *HistoryRecord) (*HistoryRecord, error) {
 	query := `
 		INSERT INTO history (
-			code, name, entry_date, entry_price, exit_date, exit_price,
+			code, name, entry_date, entry_time, entry_price, exit_date, exit_time, exit_price,
 			holding_days, holding_duration, total_return, data_source, created_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id;
 	`
 	var id int64
 	err := r.db.QueryRow(query,
-		h.Code, h.Name, h.EntryDate, h.EntryPrice, h.ExitDate, h.ExitPrice,
+		h.Code, h.Name, h.EntryDate, h.EntryTime, h.EntryPrice, h.ExitDate, h.ExitTime, h.ExitPrice,
 		h.HoldingDays, h.HoldingDuration, h.TotalReturn, h.DataSource, h.CreatedAt,
 	).Scan(&id)
 	if err != nil {
@@ -40,7 +40,7 @@ func (r *HistoryRepository) Create(h *HistoryRecord) (*HistoryRecord, error) {
 func (r *HistoryRepository) GetAll() ([]HistoryRecord, error) {
 	query := `
 		SELECT
-			id, code, name, entry_date, entry_price, exit_date, exit_price,
+			id, code, name, entry_date, entry_time, entry_price, exit_date, exit_time, exit_price,
 			holding_days, holding_duration, total_return, data_source, created_at
 		FROM history
 		ORDER BY exit_date DESC, created_at DESC;
@@ -58,7 +58,7 @@ func (r *HistoryRepository) GetAll() ([]HistoryRecord, error) {
 func (r *HistoryRepository) GetByCode(code string) ([]HistoryRecord, error) {
 	query := `
 		SELECT
-			id, code, name, entry_date, entry_price, exit_date, exit_price,
+			id, code, name, entry_date, entry_time, entry_price, exit_date, exit_time, exit_price,
 			holding_days, holding_duration, total_return, data_source, created_at
 		FROM history
 		WHERE code = ?
@@ -77,7 +77,7 @@ func (r *HistoryRepository) GetByCode(code string) ([]HistoryRecord, error) {
 func (r *HistoryRepository) GetByID(id int64) (*HistoryRecord, error) {
 	query := `
 		SELECT
-			id, code, name, entry_date, entry_price, exit_date, exit_price,
+			id, code, name, entry_date, entry_time, entry_price, exit_date, exit_time, exit_price,
 			holding_days, holding_duration, total_return, data_source, created_at
 		FROM history
 		WHERE id = ?;
@@ -118,7 +118,8 @@ func (r *HistoryRepository) ClearAll() error {
 func (r *HistoryRepository) scanRow(row *sql.Row) (*HistoryRecord, error) {
 	var h HistoryRecord
 	err := row.Scan(
-		&h.ID, &h.Code, &h.Name, &h.EntryDate, &h.EntryPrice, &h.ExitDate, &h.ExitPrice,
+		&h.ID, &h.Code, &h.Name, &h.EntryDate, &h.EntryTime, &h.EntryPrice,
+		&h.ExitDate, &h.ExitTime, &h.ExitPrice,
 		&h.HoldingDays, &h.HoldingDuration, &h.TotalReturn, &h.DataSource, &h.CreatedAt,
 	)
 	if err != nil {
@@ -136,7 +137,8 @@ func (r *HistoryRepository) scanRows(rows *sql.Rows) ([]HistoryRecord, error) {
 	for rows.Next() {
 		var h HistoryRecord
 		if err := rows.Scan(
-			&h.ID, &h.Code, &h.Name, &h.EntryDate, &h.EntryPrice, &h.ExitDate, &h.ExitPrice,
+			&h.ID, &h.Code, &h.Name, &h.EntryDate, &h.EntryTime, &h.EntryPrice,
+			&h.ExitDate, &h.ExitTime, &h.ExitPrice,
 			&h.HoldingDays, &h.HoldingDuration, &h.TotalReturn, &h.DataSource, &h.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan history rows: %w", err)

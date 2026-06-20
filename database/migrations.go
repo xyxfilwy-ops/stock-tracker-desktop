@@ -49,8 +49,10 @@ func (db *DB) migrate() (err error) {
 			code             TEXT    NOT NULL,
 			name             TEXT    NOT NULL,
 			entry_date       TEXT    NOT NULL,
+			entry_time       TEXT    NOT NULL DEFAULT '',
 			entry_price      INTEGER NOT NULL,
 			exit_date        TEXT    NOT NULL,
+			exit_time        TEXT    NOT NULL DEFAULT '',
 			exit_price       INTEGER NOT NULL,
 			holding_days     INTEGER NOT NULL,
 			holding_duration TEXT    NOT NULL DEFAULT '',
@@ -63,7 +65,9 @@ func (db *DB) migrate() (err error) {
 		return fmt.Errorf("create history table: %w", err)
 	}
 
-	// 2.5 迁移：为旧表添加 holding_duration 列（如果不存在）
+	// 2.5 迁移：为旧表添加新列（如果不存在）
+	_, _ = tx.Exec(`ALTER TABLE history ADD COLUMN IF NOT EXISTS entry_time TEXT NOT NULL DEFAULT '';`)
+	_, _ = tx.Exec(`ALTER TABLE history ADD COLUMN IF NOT EXISTS exit_time TEXT NOT NULL DEFAULT '';`)
 	_, _ = tx.Exec(`ALTER TABLE history ADD COLUMN IF NOT EXISTS holding_duration TEXT NOT NULL DEFAULT '';`)
 
 	// 3. 创建 daily_snapshots 表（每日快照，级联删除）

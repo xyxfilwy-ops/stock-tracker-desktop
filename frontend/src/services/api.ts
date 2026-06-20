@@ -41,13 +41,15 @@ export interface HistoryRecord {
   id: number;
   code: string;
   name: string;
-  entryDate: string;
-  entryPrice: number;     // 前复权选入价（分）
-  exitDate: string;
-  exitPrice: number;      // 调出价（分）
-  holdingDays: number;    // 持股天数
+  entryDate: string;       // 选入日期 YYYY-MM-DD
+  entryTime: string;       // 选入时间 HH:MM:SS
+  entryPrice: number;      // 前复权选入价（分）
+  exitDate: string;        // 调出日期 YYYY-MM-DD
+  exitTime: string;        // 调出时间 HH:MM:SS
+  exitPrice: number;       // 调出价（分）
+  holdingDays: number;     // 持股天数
   holdingDuration: string; // 持仓时间（如"1年3个月15天"）
-  totalReturn: number;    // 区间收益（BP）
+  totalReturn: number;     // 区间收益（BP）
 }
 
 /** 批量刷新结果 */

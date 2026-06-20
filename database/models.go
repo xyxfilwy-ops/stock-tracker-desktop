@@ -66,8 +66,10 @@ type HistoryRecord struct {
 	Code            string `json:"code"`           // 股票代码
 	Name            string `json:"name"`           // 股票名称（调出时的名称）
 	EntryDate       string `json:"entryDate"`     // 选入日期
+	EntryTime       string `json:"entryTime"`     // 选入时间
 	EntryPrice      int64  `json:"entryPrice"`    // 选入价（前复权，分）
 	ExitDate        string `json:"exitDate"`     // 调出日期
+	ExitTime        string `json:"exitTime"`     // 调出时间
 	ExitPrice       int64  `json:"exitPrice"`    // 调出价（分）
 	HoldingDays     int64  `json:"holdingDays"`  // 持股天数
 	HoldingDuration string `json:"holdingDuration"` // 持仓时间（如"1年3个月15天"）

@@ -30,10 +30,8 @@
     return `${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  function formatDateRange(entry: string, exit: string): string {
-    const entryFmt = formatShortDate(entry);
-    const exitFmt = formatShortDate(exit);
-    return `${entryFmt} → ${exitFmt}`;
+  function formatDateTime(date: string, time: string): string {
+    return `${date} ${time}`;
   }
 </script>
 
@@ -56,15 +54,15 @@
           <td class="cell name">{record.name}</td>
           <td class="cell" style="text-align: right;">
             <span class="price">{formatPrice(record.entryPrice)}</span>
+            <span class="time-hint">{formatDateTime(record.entryDate, record.entryTime)}</span>
           </td>
           <td class="cell" style="text-align: right;">
             <span class="price">{formatPrice(record.exitPrice)}</span>
+            <span class="time-hint">{formatDateTime(record.exitDate, record.exitTime)}</span>
           </td>
           <td class="cell" style="text-align: center;">
-            <span class="duration" title="{record.entryDate} → {record.exitDate}">
-              {record.holdingDuration}
-              <span class="days-hint">({record.holdingDays}天)</span>
-            </span>
+            <span class="duration">{record.holdingDuration}</span>
+            <span class="days-hint">({record.holdingDays}天)</span>
           </td>
           <td class="cell" style="text-align: right;">
             <span class="badge" style="color: {getReturnColor(record.totalReturn)}; background: {getReturnBg(record.totalReturn)};">
@@ -140,16 +138,23 @@
   }
 
   .price {
+    display: block;
     font-family: var(--font-mono, 'SF Mono', monospace);
     font-size: 13px;
     color: var(--ink-700, #374151);
     font-variant-numeric: tabular-nums;
   }
 
+  .time-hint {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-400, #9ca3af);
+    margin-top: 2px;
+  }
+
   .duration {
     font-size: 13px;
     color: var(--ink-700, #374151);
-    cursor: default;
   }
 
   .days-hint {
